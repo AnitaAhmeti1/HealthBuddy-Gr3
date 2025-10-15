@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Progress from 'react-native-progress';
 
-export default function App() {
+export default function WaterRemainder() {
   const [waterIntake, setWaterIntake] = useState(0);
   const [goal, setGoal] = useState(3500); 
   const [drinkingLog, setDrinkingLog] = useState([]);
