@@ -2,17 +2,19 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
+import { useRouter } from "expo-router";
 
 const screenWidth = Dimensions.get("window").width;
 
 const BloodPressureScreen = () => {
+  const router = useRouter(); // <-- router për navigation
+
   const [systolic, setSystolic] = useState(100);
   const [diastolic, setDiastolic] = useState(70);
   const [pulse, setPulse] = useState(30);
   const [records, setRecords] = useState([]);
   const [status, setStatus] = useState("Normal");
 
-  // Ngarkon të dhënat ekzistuese
   useEffect(() => {
     loadData();
   }, []);
@@ -42,7 +44,6 @@ const BloodPressureScreen = () => {
       date: new Date().toISOString().split("T")[0],
     };
 
-    // përcakto statusin
     let newStatus = "Normal";
     if (systolic > 130 || diastolic > 85) newStatus = "High";
     else if (systolic < 90 || diastolic < 60) newStatus = "Low";
@@ -53,26 +54,28 @@ const BloodPressureScreen = () => {
     saveData(updatedRecords);
   };
 
-  // Përgatit grafikun
   const chartData = {
-    labels: records.map((r) => r.date.slice(5)), // muaj-ditë
+    labels: records.map((r) => r.date.slice(5)),
     datasets: [
-      {
-        data: records.map((r) => r.systolic),
-        color: () => "rgba(255, 99, 132, 1)", // e kuqe
-      },
-      {
-        data: records.map((r) => r.diastolic),
-        color: () => "rgba(54, 162, 235, 1)", // blu
-      },
+      { data: records.map((r) => r.systolic), color: () => "rgba(255, 99, 132, 1)" },
+      { data: records.map((r) => r.diastolic), color: () => "rgba(54, 162, 235, 1)" },
     ],
   };
 
   return (
     <ScrollView style={styles.container}>
+      {/* ← Back Button */}
+
+<TouchableOpacity
+  onPress={() => router.push("/(tabs)/home")}
+  style={styles.backButton}
+>
+  <Text style={styles.backText}>←</Text>
+</TouchableOpacity>
+
+
       <Text style={styles.title}>Blood Pressure</Text>
 
-      {/* Inputat */}
       <View style={styles.inputsContainer}>
         <View style={styles.inputBox}>
           <Text style={styles.label}>Systolic</Text>
@@ -102,12 +105,10 @@ const BloodPressureScreen = () => {
         </View>
       </View>
 
-      {/* Butoni */}
       <TouchableOpacity style={styles.button} onPress={handleAdd}>
         <Text style={styles.buttonText}>Add</Text>
       </TouchableOpacity>
 
-      {/* Karta e rezultateve */}
       <View style={styles.resultCard}>
         <Text style={styles.resultText}>{systolic}/{diastolic} mmHg</Text>
         <Text style={[styles.status, 
@@ -124,7 +125,6 @@ const BloodPressureScreen = () => {
         </Text>
       </View>
 
-      {/* Grafiku */}
       {records.length > 0 && (
         <BarChart
           data={chartData}
@@ -149,7 +149,18 @@ const BloodPressureScreen = () => {
 export default BloodPressureScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
+  container: { flex: 1, backgroundColor: "#e984413f", padding: 16 },
+  backButton: { 
+  marginBottom: 12, 
+  padding: 10, 
+  alignSelf: "flex-start" 
+},
+backText: { 
+  fontSize: 24, 
+  color:  "#ff7f00", 
+  fontWeight: "bold" 
+},
+
   title: { fontSize: 22, fontWeight: "600", textAlign: "center", marginVertical: 12 },
   inputsContainer: { flexDirection: "row", justifyContent: "space-between", marginVertical: 16 },
   inputBox: { alignItems: "center", flex: 1 },
