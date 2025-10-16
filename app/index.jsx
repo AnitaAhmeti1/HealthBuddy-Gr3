@@ -24,6 +24,9 @@ export default function App() {
       <Link href="/home" style={styles.link}>
         Hap Home.jsx 🔗
       </Link>
+       <Link href="/BloodPressureScreen" style={styles.link}>
+        Hap BloodPressure.jsx 🔗
+      </Link>
     </View>
   );
 }
