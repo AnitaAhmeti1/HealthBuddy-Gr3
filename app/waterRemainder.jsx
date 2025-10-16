@@ -2,8 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Progress from 'react-native-progress';
+import { useRouter } from "expo-router";
+import { Ionicons } from '@expo/vector-icons';
+
 
 export default function App() {
+  const router = useRouter(); // ✅ kjo lejon navigimin
   const [waterIntake, setWaterIntake] = useState(0);
   const [goal, setGoal] = useState(3500);
   const [drinkingLog, setDrinkingLog] = useState([]);
@@ -12,7 +16,6 @@ export default function App() {
 
   const getToday = () => new Date().toISOString().split('T')[0];
 
-  
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -35,7 +38,7 @@ export default function App() {
     };
     loadData();
 
-      const scheduleReset = () => {
+    const scheduleReset = () => {
       const now = new Date();
       const nextReset = new Date();
       nextReset.setHours(0, 10, 0, 0); // 12:10 AM
@@ -52,7 +55,6 @@ export default function App() {
     scheduleReset();
   }, []);
 
-  
   useEffect(() => {
     const saveData = async () => {
       try {
@@ -67,7 +69,6 @@ export default function App() {
     saveData();
   }, [waterIntake, drinkingLog, dailyHistory]);
 
-  
   const addWater = (amount) => {
     const currentTime = new Date().toLocaleTimeString();
     const newIntake = waterIntake + amount;
@@ -76,21 +77,18 @@ export default function App() {
     setDrinkingLog(newLog);
   };
 
-  
   const deleteWaterLog = (id, amount) => {
     const updatedLog = drinkingLog.filter(item => item.id !== id);
     setDrinkingLog(updatedLog);
     setWaterIntake(waterIntake - amount);
   };
 
-  
   const rawProgress = waterIntake / goal;
   const progress = Math.min(rawProgress, 1);
   let progressColor = '#00BFFF';
   if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
   else if (rawProgress > 1.5) progressColor = '#FF4500';
 
-  
   const resetDailyIntake = async (previousDate) => {
     try {
       if (previousDate) {
@@ -110,11 +108,21 @@ export default function App() {
     }
   };
 
-  
   const recentDays = dailyHistory.slice(-7);
 
   return (
     <View style={styles.container}>
+      {/* ✅ Butoni Back i vendosur në vendin e duhur */}
+    
+  <TouchableOpacity
+    onPress={() => router.push("/(tabs)/home")}
+    style={styles.backButton}
+  >
+    <Text style={styles.backText}>←</Text>
+  </TouchableOpacity>
+
+
+
       <Text style={styles.title}>Smart Water Tracker 💧</Text>
 
       <View style={styles.progressContainer}>
@@ -181,7 +189,6 @@ export default function App() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', paddingTop: 60, backgroundColor: '#E3F2FD' },
   title: { fontSize: 26, fontWeight: 'bold', color: '#007ACC', marginBottom: 25 },
@@ -199,4 +206,17 @@ const styles = StyleSheet.create({
   logText: { fontSize: 17, color: '#333', flex: 1, flexWrap: 'wrap' },
   deleteButton: { backgroundColor: '#FF6347', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8 },
   deleteButtonText: { color: '#fff', fontWeight: 'bold' },
+ backButton: {
+  position: "absolute",
+  top: 55,
+  left: 20,
+  padding: 30, 
+  
+  borderRadius: 12,
+  padding: 8,
+  zIndex: 10,
+},
+
+
+
 });
