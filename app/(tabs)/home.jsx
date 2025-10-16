@@ -7,7 +7,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Health Tracker 🩺</Text>
+      <Text style={styles.title}>HealthBuddy 🩺</Text>
       <Text style={styles.subtitle}>Welcome back! Choose a section below.</Text>
 
       <View style={styles.cardContainer}>
