@@ -11,6 +11,7 @@ export default function HomeScreen() {
       <Text style={styles.subtitle}>Welcome back! Choose a section below.</Text>
 
       <View style={styles.cardContainer}>
+        {/* Water Tracker */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push("/waterRemainder")}
@@ -20,6 +21,7 @@ export default function HomeScreen() {
           <Text style={styles.cardDesc}>Track your daily hydration 💧</Text>
         </TouchableOpacity>
 
+        {/* Blood Pressure */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push("/BloodPressureScreen")}
@@ -29,6 +31,7 @@ export default function HomeScreen() {
           <Text style={styles.cardDesc}>Monitor your BP and pulse</Text>
         </TouchableOpacity>
 
+        {/* Sleep Tracker */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push("/sleepTracker")}
@@ -37,9 +40,22 @@ export default function HomeScreen() {
           <Text style={styles.cardTitle}>Sleep Tracker</Text>
           <Text style={styles.cardDesc}>Track your sleep hours 🛌</Text>
         </TouchableOpacity>
+
+        {/* Steps Tracker */}
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => router.push("/stepsTracker")}
+        >
+          <Ionicons name="walk-outline" size={40} color="#32CD32" />
+          <Text style={styles.cardTitle}>Steps Tracker</Text>
+          <Text style={styles.cardDesc}>Count your daily steps 👣</Text>
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={() => router.push("/login")}>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => router.push("/login")}
+      >
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
     </View>
