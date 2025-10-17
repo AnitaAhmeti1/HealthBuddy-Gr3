@@ -50,7 +50,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/stepsTracker")}
+          onPress={() => router.push("/ActivityTracker")}
         >
           <Ionicons name="walk-outline" size={40} color="#32CD32" />
           <Text style={styles.cardTitle}>Steps Tracker</Text>
