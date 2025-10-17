@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  Alert,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
 import { useRouter } from "expo-router";
@@ -7,8 +15,7 @@ import { useRouter } from "expo-router";
 const screenWidth = Dimensions.get("window").width;
 
 const BloodPressureScreen = () => {
-  const router = useRouter(); // <-- router për navigation
-
+  const router = useRouter();
   const [systolic, setSystolic] = useState(100);
   const [diastolic, setDiastolic] = useState(70);
   const [pulse, setPulse] = useState(30);
@@ -36,12 +43,13 @@ const BloodPressureScreen = () => {
     }
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
+    const today = new Date().toISOString().split("T")[0];
     const newRecord = {
       systolic,
       diastolic,
       pulse,
-      date: new Date().toISOString().split("T")[0],
+      date: today,
     };
 
     let newStatus = "Normal";
@@ -51,7 +59,30 @@ const BloodPressureScreen = () => {
 
     const updatedRecords = [...records, newRecord];
     setRecords(updatedRecords);
-    saveData(updatedRecords);
+    await saveData(updatedRecords);
+
+    // Kontrollo arritjet ditore
+    checkDailyBadge(newStatus, today);
+  };
+
+  const checkDailyBadge = async (status, today) => {
+    try {
+      const badges = JSON.parse((await AsyncStorage.getItem("badges")) || "{}");
+
+      // Badge për presion të shëndetshëm sot
+      if (
+        status === "Normal" &&
+        (!badges.healthyHeartDate || badges.healthyHeartDate !== today)
+      ) {
+        badges.healthyHeart = true;
+        badges.healthyHeartDate = today;
+        Alert.alert("💚 Achievement unlocked!", "Healthy BP today!");
+      }
+
+      await AsyncStorage.setItem("badges", JSON.stringify(badges));
+    } catch (e) {
+      console.log("Error saving badges:", e);
+    }
   };
 
   const chartData = {
@@ -64,15 +95,12 @@ const BloodPressureScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* ← Back Button */}
-
-<TouchableOpacity
-  onPress={() => router.push("/(tabs)/home")}
-  style={styles.backButton}
->
-  <Text style={styles.backText}>←</Text>
-</TouchableOpacity>
-
+      <TouchableOpacity
+        onPress={() => router.push("/(tabs)/home")}
+        style={styles.backButton}
+      >
+        <Text style={styles.backText}>←</Text>
+      </TouchableOpacity>
 
       <Text style={styles.title}>Blood Pressure</Text>
 
@@ -81,8 +109,12 @@ const BloodPressureScreen = () => {
           <Text style={styles.label}>Systolic</Text>
           <Text style={styles.value}>{systolic}</Text>
           <View style={styles.selector}>
-            <TouchableOpacity onPress={() => setSystolic((prev) => prev - 1)}><Text style={styles.arrow}>-</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setSystolic((prev) => prev + 1)}><Text style={styles.arrow}>+</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setSystolic((p) => p - 1)}>
+              <Text style={styles.arrow}>-</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setSystolic((p) => p + 1)}>
+              <Text style={styles.arrow}>+</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -90,8 +122,12 @@ const BloodPressureScreen = () => {
           <Text style={styles.label}>Diastolic</Text>
           <Text style={styles.value}>{diastolic}</Text>
           <View style={styles.selector}>
-            <TouchableOpacity onPress={() => setDiastolic((prev) => prev - 1)}><Text style={styles.arrow}>-</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setDiastolic((prev) => prev + 1)}><Text style={styles.arrow}>+</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setDiastolic((p) => p - 1)}>
+              <Text style={styles.arrow}>-</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setDiastolic((p) => p + 1)}>
+              <Text style={styles.arrow}>+</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -99,8 +135,12 @@ const BloodPressureScreen = () => {
           <Text style={styles.label}>Pulse</Text>
           <Text style={styles.value}>{pulse}</Text>
           <View style={styles.selector}>
-            <TouchableOpacity onPress={() => setPulse((prev) => prev - 1)}><Text style={styles.arrow}>-</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setPulse((prev) => prev + 1)}><Text style={styles.arrow}>+</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setPulse((p) => p - 1)}>
+              <Text style={styles.arrow}>-</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setPulse((p) => p + 1)}>
+              <Text style={styles.arrow}>+</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -110,10 +150,19 @@ const BloodPressureScreen = () => {
       </TouchableOpacity>
 
       <View style={styles.resultCard}>
-        <Text style={styles.resultText}>{systolic}/{diastolic} mmHg</Text>
-        <Text style={[styles.status, 
-          status === "Normal" ? styles.normal : status === "High" ? styles.high : styles.low
-        ]}>
+        <Text style={styles.resultText}>
+          {systolic}/{diastolic} mmHg
+        </Text>
+        <Text
+          style={[
+            styles.status,
+            status === "Normal"
+              ? styles.normal
+              : status === "High"
+              ? styles.high
+              : styles.low,
+          ]}
+        >
           {status}
         </Text>
         <Text style={styles.desc}>
@@ -150,17 +199,8 @@ export default BloodPressureScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#e984413f", padding: 16 },
-  backButton: { 
-  marginBottom: 12, 
-  padding: 10, 
-  alignSelf: "flex-start" 
-},
-backText: { 
-  fontSize: 24, 
-  color:  "#ff7f00", 
-  fontWeight: "bold" 
-},
-
+  backButton: { marginBottom: 12, padding: 10, alignSelf: "flex-start" },
+  backText: { fontSize: 24, color: "#ff7f00", fontWeight: "bold" },
   title: { fontSize: 22, fontWeight: "600", textAlign: "center", marginVertical: 12 },
   inputsContainer: { flexDirection: "row", justifyContent: "space-between", marginVertical: 16 },
   inputBox: { alignItems: "center", flex: 1 },

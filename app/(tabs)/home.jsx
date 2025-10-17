@@ -11,7 +11,7 @@ export default function HomeScreen() {
       <Text style={styles.subtitle}>Welcome back! Choose a section below.</Text>
 
       <View style={styles.cardContainer}>
-        {/* Water Tracker */}
+        {/* 💧 Water Tracker */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push("/waterRemainder")}
@@ -21,7 +21,7 @@ export default function HomeScreen() {
           <Text style={styles.cardDesc}>Track your daily hydration 💧</Text>
         </TouchableOpacity>
 
-        {/* Blood Pressure */}
+        {/* ❤️ Blood Pressure */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push("/BloodPressureScreen")}
@@ -31,7 +31,7 @@ export default function HomeScreen() {
           <Text style={styles.cardDesc}>Monitor your BP and pulse</Text>
         </TouchableOpacity>
 
-        {/* Sleep Tracker */}
+        {/* 😴 Sleep Tracker */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push("/sleepTracker")}
@@ -41,7 +41,7 @@ export default function HomeScreen() {
           <Text style={styles.cardDesc}>Track your sleep hours 🛌</Text>
         </TouchableOpacity>
 
-        {/* Steps Tracker */}
+        {/* 👣 Steps Tracker */}
         <TouchableOpacity
           style={styles.card}
           onPress={() => router.push("/stepsTracker")}
@@ -49,6 +49,16 @@ export default function HomeScreen() {
           <Ionicons name="walk-outline" size={40} color="#32CD32" />
           <Text style={styles.cardTitle}>Steps Tracker</Text>
           <Text style={styles.cardDesc}>Count your daily steps 👣</Text>
+        </TouchableOpacity>
+
+        {/* 🏅 Achievements / Badges */}
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => router.push("/badgesScreen")}
+        >
+          <Ionicons name="trophy-outline" size={40} color="#FFD700" />
+          <Text style={styles.cardTitle}>Achievements</Text>
+          <Text style={styles.cardDesc}>View your unlocked badges 🏅</Text>
         </TouchableOpacity>
       </View>
 
@@ -103,6 +113,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 10,
     color: "#333",
+    textAlign: "center",
   },
   cardDesc: {
     fontSize: 12,
