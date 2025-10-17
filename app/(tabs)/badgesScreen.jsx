@@ -26,7 +26,7 @@ export default function BadgesScreen() {
         },
         {
           id: "3",
-          title: "Healthy Heart ❤️",
+          title: "Healthy Heart 🫀",
           desc: "Kept blood pressure normal",
           unlocked: storedBadges.healthyHeartDate === today,
         },
@@ -60,7 +60,7 @@ export default function BadgesScreen() {
             <Text style={styles.badgeTitle}>{item.title}</Text>
             <Text style={styles.badgeDesc}>{item.desc}</Text>
             <Text style={styles.badgeStatus}>
-              {item.unlocked ? "✅ Unlocked" : "🔒 Locked"}
+              {item.unlocked ? "Unlocked" : "Locked"}
             </Text>
           </View>
         )}
