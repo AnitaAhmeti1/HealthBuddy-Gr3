@@ -13,13 +13,7 @@ export default function NavLayout() {
         tabBarInactiveTintColor: "#888",
         tabBarStyle: { backgroundColor: "white", borderTopWidth: 0, height: 70 },
         tabBarLabelStyle: { fontSize: 14, fontWeight: "600", marginBottom: 6 },
-        headerShown: false
-
-        // headerStyle: { backgroundColor: "#007bff7f"},
-        // headerTintColor: "white",
-        // headerTitleAlign: "center",
-        // headerTitleStyle: { fontWeight: "bold", fontSize: 16 },
-        // headerTitleContainerStyle: { left: 0, right: 0, justifyContent: "center" },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -29,6 +23,15 @@ export default function NavLayout() {
           tabBarIcon: ({ color }) => <NavIcon name="home" color={color} />,
         }}
       />
+
+      <Tabs.Screen
+        name="achievements"
+        options={{
+          title: "Achievements",
+          tabBarIcon: ({ color }) => <NavIcon name="star" color={color} />,
+        }}
+      />
+
       <Tabs.Screen
         name="profile"
         options={{
