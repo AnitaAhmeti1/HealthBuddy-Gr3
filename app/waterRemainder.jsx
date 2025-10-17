@@ -1,13 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import * as Progress from 'react-native-progress';
 import { useRouter } from "expo-router";
-import { Ionicons } from '@expo/vector-icons';
 
-
-export default function App() {
-  const router = useRouter(); // ✅ kjo lejon navigimin
+export default function WaterTracker() {
+  const router = useRouter(); 
   const [waterIntake, setWaterIntake] = useState(0);
   const [goal, setGoal] = useState(3500);
   const [drinkingLog, setDrinkingLog] = useState([]);
@@ -41,10 +39,8 @@ export default function App() {
     const scheduleReset = () => {
       const now = new Date();
       const nextReset = new Date();
-      nextReset.setHours(0, 10, 0, 0); // 12:10 AM
-      if (now > nextReset) {
-        nextReset.setDate(nextReset.getDate() + 1);
-      }
+      nextReset.setHours(0, 0, 0, 0); // 12:00 AM
+      nextReset.setDate(nextReset.getDate() + 1);
       const timeout = nextReset.getTime() - now.getTime();
       setTimeout(async () => {
         await resetDailyIntake(getToday());
@@ -75,6 +71,7 @@ export default function App() {
     const newLog = [...drinkingLog, { time: currentTime, amount, id: Date.now().toString() }];
     setWaterIntake(newIntake);
     setDrinkingLog(newLog);
+    checkHydrationBadge(newIntake);
   };
 
   const deleteWaterLog = (id, amount) => {
@@ -83,11 +80,24 @@ export default function App() {
     setWaterIntake(waterIntake - amount);
   };
 
-  const rawProgress = waterIntake / goal;
-  const progress = Math.min(rawProgress, 1);
-  let progressColor = '#00BFFF';
-  if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
-  else if (rawProgress > 1.5) progressColor = '#FF4500';
+  // Kontrollon për Hydration Hero badge ditore
+  const checkHydrationBadge = async (currentIntake) => {
+    if (currentIntake >= goal) {
+      try {
+        const badgesData = await AsyncStorage.getItem("badges");
+        const badges = badgesData ? JSON.parse(badgesData) : {};
+        const todayDate = getToday();
+
+        if (badges.hydrationHeroDate !== todayDate) {
+          badges.hydrationHeroDate = todayDate;
+          await AsyncStorage.setItem("badges", JSON.stringify(badges));
+          Alert.alert("🏆 Hydration Hero unlocked!", "You've reached your daily water goal!");
+        }
+      } catch (e) {
+        console.log("Error updating badges", e);
+      }
+    }
+  };
 
   const resetDailyIntake = async (previousDate) => {
     try {
@@ -97,6 +107,14 @@ export default function App() {
         const trimmedHistory = newHistory.slice(-30);
         setDailyHistory(trimmedHistory);
         await AsyncStorage.setItem('dailyHistory', JSON.stringify(trimmedHistory));
+
+        // Ruaj badge për ditën e kaluar nëse ka arritur goal
+        if (waterIntake >= goal) {
+          const badgesData = await AsyncStorage.getItem("badges");
+          const badges = badgesData ? JSON.parse(badgesData) : {};
+          badges.hydrationHeroDate = previousDate;
+          await AsyncStorage.setItem("badges", JSON.stringify(badges));
+        }
       }
       setWaterIntake(0);
       setDrinkingLog([]);
@@ -108,20 +126,19 @@ export default function App() {
     }
   };
 
+  const rawProgress = waterIntake / goal;
+  const progress = Math.min(rawProgress, 1);
+  let progressColor = '#00BFFF';
+  if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
+  else if (rawProgress > 1.5) progressColor = '#FF4500';
+
   const recentDays = dailyHistory.slice(-7);
 
   return (
     <View style={styles.container}>
-      {/* ✅ Butoni Back i vendosur në vendin e duhur */}
-    
-  <TouchableOpacity
-    onPress={() => router.push("/(tabs)/home")}
-    style={styles.backButton}
-  >
-    <Text style={styles.backText}>←</Text>
-  </TouchableOpacity>
-
-
+      <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
+        <Text style={styles.backText}>←</Text>
+      </TouchableOpacity>
 
       <Text style={styles.title}>Smart Water Tracker 💧</Text>
 
@@ -206,17 +223,6 @@ const styles = StyleSheet.create({
   logText: { fontSize: 17, color: '#333', flex: 1, flexWrap: 'wrap' },
   deleteButton: { backgroundColor: '#FF6347', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8 },
   deleteButtonText: { color: '#fff', fontWeight: 'bold' },
- backButton: {
-  position: "absolute",
-  top: 55,
-  left: 20,
-  padding: 30, 
-  
-  borderRadius: 12,
-  padding: 8,
-  zIndex: 10,
-},
-
-
-
+  backButton: { position: "absolute", top: 55, left: 20, borderRadius: 12, padding: 8, zIndex: 10 },
+  backText: { fontSize: 24, color: "#0026ffff", fontWeight: "bold" },
 });
