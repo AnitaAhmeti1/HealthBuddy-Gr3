@@ -75,7 +75,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/achievements')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/badgesScreen')}>
           <View style={styles.menuLeft}>
             <Ionicons name="trophy" size={22} color="#FFD700" />
             <Text style={styles.menuText}>My Achievements</Text>
