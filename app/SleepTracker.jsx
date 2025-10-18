@@ -1,55 +1,32 @@
-import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Appearance, Dimensions, PanResponder, Platform, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-
-
-type SleepSession = {
-  id: string;
-  startISO: string; // ISO datetime string
-  endISO: string;   // ISO datetime string
-  stage?: SleepStage;
-};
-
-type SleepByDay = Record<string, number>; // key: YYYY-MM-DD, value: hours slept that day
-
-type SleepSchedule = {
-  bedtime: string;   // HH:mm
-  wakeTime: string;  // HH:mm
-};
-
-type SleepStage = 'inBed' | 'asleep' | 'awake' | 'core' | 'deep' | 'rem';
-
-const STORAGE_KEYS = {
-  SESSIONS: 'sleep.sessions.v1',
-  SCHEDULE: 'sleep.schedule.v1',
-  SEEDED: 'sleep.seeded.v1',
-};
+import { router } from 'expo-router';
 
 // Helper functions
-const pad2 = (n: number) => n < 10 ? `0${n}` : String(n);
-const formatYYYYMMDD = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-const formatMonthYear = (year: number, monthIndex: number) => new Date(year, monthIndex, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
-const parseISO = (iso: string) => new Date(iso);
-const addMinutes = (date: Date, minutes: number) => new Date(date.getTime() + minutes * 60000);
-const isAfter = (a: Date, b: Date) => a.getTime() > b.getTime();
-const diffMinutes = (a: Date, b: Date) => Math.max(0, Math.round((b.getTime() - a.getTime()) / 60000));
+const pad2 = (n) => n < 10 ? `0${n}` : String(n);
+const formatYYYYMMDD = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const formatMonthYear = (year, monthIndex) => new Date(year, monthIndex, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
+const parseISO = (iso) => new Date(iso);
+const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60000);
+const isAfter = (a, b) => a.getTime() > b.getTime();
+const diffMinutes = (a, b) => Math.max(0, Math.round((b.getTime() - a.getTime()) / 60000));
 
-const endOfDayPlusTick = (d: Date) => {
+const endOfDayPlusTick = (d) => {
   const next = new Date(d);
   next.setHours(23, 59, 59, 999);
   return addMinutes(next, 0.001);
 };
 
-const getMonthDays = (year: number, monthIndex: number) => {
+const getMonthDays = (year, monthIndex) => {
   const total = new Date(year, monthIndex + 1, 0).getDate();
   return Array.from({ length: total }, (_, i) => formatYYYYMMDD(new Date(year, monthIndex, i + 1)));
 };
 
-const dayOfWeek = (dateKey: string) => new Date(dateKey + 'T00:00:00').getDay();
+const dayOfWeek = (dateKey) => new Date(dateKey + 'T00:00:00').getDay();
 
-const groupByWeeks = (days: string[]) => {
-  const weeks: string[][] = [];
-  let current: string[] = [];
+const groupByWeeks = (days) => {
+  const weeks = [];
+  let current = [];
   days.forEach((d) => {
     current.push(d);
     if (dayOfWeek(d) === 0) {
@@ -61,8 +38,8 @@ const groupByWeeks = (days: string[]) => {
   return weeks;
 };
 
-const splitSessionAcrossMidnight = (startISO: string, endISO: string): SleepByDay => {
-  const result: SleepByDay = {};
+const splitSessionAcrossMidnight = (startISO, endISO) => {
+  const result = {};
   let cursor = parseISO(startISO);
   const end = parseISO(endISO);
   if (!isAfter(end, cursor)) return result;
@@ -78,19 +55,17 @@ const splitSessionAcrossMidnight = (startISO: string, endISO: string): SleepByDa
   return result;
 };
 
-// Storage
-const memoryStore: Record<string, string> = {};
+// Storage (fallback in-memory for environments without localStorage)
+const memoryStore = {};
 const storage = {
-  async getItem(key: string) {
+  async getItem(key) {
     try {
-      // @ts-ignore
       if (globalThis?.localStorage) return globalThis.localStorage.getItem(key);
     } catch {}
     return memoryStore[key] || null;
   },
-  async setItem(key: string, value: string) {
+  async setItem(key, value) {
     try {
-      // @ts-ignore
       if (globalThis?.localStorage) return globalThis.localStorage.setItem(key, value);
     } catch {}
     memoryStore[key] = value;
@@ -101,7 +76,7 @@ const storage = {
 const Colors = {
   light: { text: '#0a0f1a', background: '#ffffff', tint: '#6ea8ff', icon: '#7083a1' },
   dark: { text: '#E6EAEE', background: '#0b1220', tint: '#8fbaff', icon: '#a8b4c6' },
-} as const;
+};
 
 const useLocalColorScheme = () => Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
 
@@ -111,16 +86,21 @@ export default function SleepScreen() {
   const screenWidth = Dimensions.get('window').width - 32;
   const topInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 24;
 
-  const [sessions, setSessions] = useState<SleepSession[]>([]);
-  const [schedule, setSchedule] = useState<SleepSchedule>({ bedtime: '22:30', wakeTime: '07:00' });
+  const [sessions, setSessions] = useState([]);
+  const [schedule, setSchedule] = useState({ bedtime: '22:30', wakeTime: '07:00' });
 
-  const [weekOffset, setWeekOffset] = useState<number>(0); // 0 = current week, -1 = previous, +1 = next
-  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
-
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
 
   const now = new Date();
-  const [year, setYear] = useState<number>(now.getFullYear());
-  const [monthIndex, setMonthIndex] = useState<number>(now.getMonth()); // 0-based
+  const [year, setYear] = useState(now.getFullYear());
+  const [monthIndex, setMonthIndex] = useState(now.getMonth());
+
+  const STORAGE_KEYS = {
+    SESSIONS: 'sleep.sessions.v1',
+    SCHEDULE: 'sleep.schedule.v1',
+    SEEDED: 'sleep.seeded.v1',
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -130,19 +110,16 @@ export default function SleepScreen() {
       ]);
       if (sRaw) setSessions(JSON.parse(sRaw));
       if (schRaw) setSchedule(JSON.parse(schRaw));
-      // Seed past 30 days realistic data if empty and not seeded
       const seeded = await storage.getItem(STORAGE_KEYS.SEEDED);
       const parsed = sRaw ? JSON.parse(sRaw) : [];
       if ((!parsed || parsed.length === 0) && !seeded) {
         const now = new Date();
-        const seeds: SleepSession[] = [];
+        const seeds = [];
         for (let i = 30; i >= 1; i--) {
           const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-          // Bedtime between 21:45 and 23:30
-          const startHourBase = 22 + (Math.random() < 0.3 ? -1 : 0); // sometimes 21
+          const startHourBase = 22 + (Math.random() < 0.3 ? -1 : 0);
           const startHour = Math.min(23, Math.max(21, startHourBase));
           const startMin = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
-          // Duration between 6.5h and 8.5h with small variance
           const durationMinutes = Math.round((6.5 * 60) + Math.random() * (2 * 60));
           const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), startHour, startMin, 0, 0);
           const end = addMinutes(start, durationMinutes);
@@ -155,14 +132,12 @@ export default function SleepScreen() {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const monthDays = useMemo(() => getMonthDays(year, monthIndex), [year, monthIndex]);
 
-  const sleepByDay: SleepByDay = useMemo(() => {
-    const acc: SleepByDay = {};
+  const sleepByDay = useMemo(() => {
+    const acc = {};
     sessions.forEach((s) => {
       const parts = splitSessionAcrossMidnight(s.startISO, s.endISO);
       Object.entries(parts).forEach(([d, h]) => {
@@ -172,65 +147,59 @@ export default function SleepScreen() {
     return acc;
   }, [sessions]);
 
- 
-   const weeks = useMemo(() => groupByWeeks(monthDays), [monthDays]);
-   const weeklyAverages = useMemo(() => {
-     return weeks.map((w) => {
-       const total = w.reduce((sum, d) => sum + (sleepByDay[d] ?? 0), 0);
-       return Number((total / w.length).toFixed(2));
-     });
-   }, [weeks, sleepByDay]);
- 
-   // ------------------------
-   // Top summary: time, animated average, battery-like indicator
-   // ------------------------
-   const [nowStr, setNowStr] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-   useEffect(() => {
-     const id = setInterval(() => {
-       setNowStr(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-     }, 30000);
-     return () => clearInterval(id);
-   }, []);
- 
-   const monthlyAvg = useMemo(() => {
-     const total = monthDays.reduce((sum, d) => sum + (sleepByDay[d] ?? 0), 0);
-     return Number((total / (monthDays.length || 1)).toFixed(2));
-   }, [monthDays, sleepByDay]);
- 
-   function getLatestNonZero(arr: number[]): number | null {
-     for (let i = arr.length - 1; i >= 0; i--) if (arr[i] > 0) return arr[i];
-     return null;
-   }
- 
-   const targetAvg = useMemo(() => {
-     const lastWeek = getLatestNonZero(weeklyAverages);
-     return lastWeek ?? monthlyAvg;
-   }, [weeklyAverages, monthlyAvg]);
- 
-   const [avgAnimated, setAvgAnimated] = useState<number>(0);
-   useEffect(() => {
-     const start = performance.now();
-     const duration = 800;
-     const from = 0;
-     const to = targetAvg;
-     let raf = 0;
-     const step = (t: number) => {
-       const p = Math.min(1, (t - start) / duration);
-       setAvgAnimated(Number((from + (to - from) * p).toFixed(2)));
-       if (p < 1) raf = requestAnimationFrame(step);
-     };
-     raf = requestAnimationFrame(step);
-     return () => cancelAnimationFrame(raf);
-   }, [targetAvg]);
- 
- 
-  const saveSchedule = useCallback(async (next: Partial<SleepSchedule>) => {
+  const weeks = useMemo(() => groupByWeeks(monthDays), [monthDays]);
+  const weeklyAverages = useMemo(() => {
+    return weeks.map((w) => {
+      const total = w.reduce((sum, d) => sum + (sleepByDay[d] ?? 0), 0);
+      return Number((total / w.length).toFixed(2));
+    });
+  }, [weeks, sleepByDay]);
+
+  const [nowStr, setNowStr] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNowStr(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const monthlyAvg = useMemo(() => {
+    const total = monthDays.reduce((sum, d) => sum + (sleepByDay[d] ?? 0), 0);
+    return Number((total / (monthDays.length || 1)).toFixed(2));
+  }, [monthDays, sleepByDay]);
+
+  function getLatestNonZero(arr) {
+    for (let i = arr.length - 1; i >= 0; i--) if (arr[i] > 0) return arr[i];
+    return null;
+  }
+
+  const targetAvg = useMemo(() => {
+    const lastWeek = getLatestNonZero(weeklyAverages);
+    return lastWeek ?? monthlyAvg;
+  }, [weeklyAverages, monthlyAvg]);
+
+  const [avgAnimated, setAvgAnimated] = useState(0);
+  useEffect(() => {
+    const start = performance.now();
+    const duration = 800;
+    const from = 0;
+    const to = targetAvg;
+    let raf = 0;
+    const step = (t) => {
+      const p = Math.min(1, (t - start) / duration);
+      setAvgAnimated(Number((from + (to - from) * p).toFixed(2)));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [targetAvg]);
+
+  const saveSchedule = useCallback(async (next) => {
     const merged = { ...schedule, ...next };
     setSchedule(merged);
     await storage.setItem(STORAGE_KEYS.SCHEDULE, JSON.stringify(merged));
   }, [schedule]);
 
-  // Schedule analysis
   const scheduleAnalysis = useMemo(() => {
     if (sessions.length === 0) return null;
     const recent = sessions.slice(0, 14);
@@ -238,7 +207,7 @@ export default function SleepScreen() {
     const wakeTimes = recent.map(s => parseISO(s.endISO).getHours() * 60 + parseISO(s.endISO).getMinutes());
     const [schedBed, schedWake] = [schedule.bedtime, schedule.wakeTime].map(t => parseInt(t.split(':')[0]) * 60 + parseInt(t.split(':')[1]));
     const [avgBed, avgWake] = [bedtimes, wakeTimes].map(arr => arr.reduce((a, b) => a + b, 0) / arr.length);
-    const variance = bedtimes.reduce((s, t) => s + Math.abs(t - schedBed), 0) / bedtimes.length + 
+    const variance = bedtimes.reduce((s, t) => s + Math.abs(t - schedBed), 0) / bedtimes.length +
                     wakeTimes.reduce((s, t) => s + Math.abs(t - schedWake), 0) / wakeTimes.length;
     return {
       avgBedtime: avgBed, avgWakeTime: avgWake, scheduledBedtime: schedBed, scheduledWakeTime: schedWake,
@@ -262,40 +231,41 @@ export default function SleepScreen() {
     if (consistencyScore > 80) recs.push("Great job! You're maintaining a consistent sleep schedule");
     return recs;
   }, [scheduleAnalysis]);
- 
-   const changeMonth = useCallback((delta: number) => {
-     const base = new Date(year, monthIndex + delta, 1);
-     setYear(base.getFullYear());
-     setMonthIndex(base.getMonth());
-   }, [year, monthIndex]);
- 
- 
+
+  const changeMonth = useCallback((delta) => {
+    const base = new Date(year, monthIndex + delta, 1);
+    setYear(base.getFullYear());
+    setMonthIndex(base.getMonth());
+  }, [year, monthIndex]);
+
   // Styles
   const styles = {
-    sectionTitle: { fontSize: 20, fontWeight: '600' as const, color: theme.text, marginBottom: 8 },
+    sectionTitle: { fontSize: 20, fontWeight: '600', color: theme.text, marginBottom: 8 },
     card: { backgroundColor: '#fff', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: '#D6E4FF', marginBottom: 16 },
     button: { backgroundColor: theme.tint, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10 },
-    buttonText: { color: '#fff', fontSize: 18, fontWeight: '700' as const },
-    numberText: { color: theme.text, fontSize: 18, fontWeight: '700' as const, minWidth: 36, textAlign: 'center' as const },
+    buttonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+    numberText: { color: theme.text, fontSize: 18, fontWeight: '700', minWidth: 36, textAlign: 'center' },
     backButton: { padding: 8, marginRight: 8 },
-    backText: { fontSize: 24, color: theme.tint, fontWeight: '700' as const },
+    backText: { fontSize: 24, color: theme.tint, fontWeight: '700' },
   };
 
-  // Components
-  const NumberRotator = ({ value, onChange, min, max, step = 1 }: { value: number; onChange: (v: number) => void; min: number; max: number; step?: number; }) => (
+  // Number rotator component
+  const NumberRotator = ({ value, onChange, min, max, step = 1 }) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <Pressable onPress={() => onChange(value <= min ? max : Math.max(min, value - step))} style={styles.button}>
         <Text style={styles.buttonText}>-</Text>
       </Pressable>
-      <Text style={styles.numberText}>{value.toString().padStart(2, '0')}</Text>
+      <Text style={styles.numberText}>{String(value).padStart(2, '0')}</Text>
       <Pressable onPress={() => onChange(value >= max ? min : Math.min(max, value + step))} style={styles.button}>
         <Text style={styles.buttonText}>+</Text>
       </Pressable>
     </View>
   );
 
-  const TimeRotator = ({ value, onChange }: { value: string; onChange: (next: string) => void; }) => {
-    const [h, m] = value.split(':').map((n) => parseInt(n, 10));
+  const TimeRotator = ({ value, onChange }) => {
+    const parts = value.split(':').map((n) => parseInt(n, 10));
+    const h = parts[0] ?? 0;
+    const m = parts[1] ?? 0;
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <NumberRotator value={h} onChange={(nextH) => onChange(`${String(nextH).padStart(2, '0')}:${String(m).padStart(2, '0')}`)} min={0} max={23} />
@@ -304,11 +274,10 @@ export default function SleepScreen() {
       </View>
     );
   };
- 
-  // Chart components
-  const totalMinutesForDateKey = (dateKey: string) => Math.round((sleepByDay[dateKey] ?? 0) * 60);
-  
-  const findWeekRangeFromOffset = (offset: number) => {
+
+  // Chart helpers
+  const totalMinutesForDateKey = (dateKey) => Math.round((sleepByDay[dateKey] ?? 0) * 60);
+  const findWeekRangeFromOffset = (offset) => {
     const today = new Date();
     const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const start = new Date(current);
@@ -316,7 +285,7 @@ export default function SleepScreen() {
     return Array.from({ length: 7 }, (_, i) => formatYYYYMMDD(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)));
   };
 
-  const StackedWeekChart = ({ labels, sleepByDay, width, height, panHandlers, onSelect, selectedIndex, animatedTranslateX }: { labels: string[]; sleepByDay: SleepByDay; width: number; height: number; panHandlers: any; onSelect?: (index: number) => void; selectedIndex?: number | null; animatedTranslateX: Animated.Value; }) => {
+  const StackedWeekChart = ({ labels, sleepByDay, width, height, panHandlers, onSelect, selectedIndex, animatedTranslateX }) => {
     const weekKeys = findWeekRangeFromOffset(weekOffset);
     const values = weekKeys.map((k) => totalMinutesForDateKey(k));
     const maxMin = Math.max(480, ...values);
@@ -330,7 +299,9 @@ export default function SleepScreen() {
         <View style={{ position: 'absolute', left: 12, right: 48, top: 10, bottom: 24, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
           {values.map((mins, i) => {
             const h = Math.round(((mins / maxMin) || 0) * plotH);
-            const [asleepH, coreH, deepH] = [h * 0.6, h * 0.2, h * 0.15].map(x => Math.round(x));
+            const asleepH = Math.round(h * 0.6);
+            const coreH = Math.round(h * 0.2);
+            const deepH = Math.round(h * 0.15);
             const remH = Math.max(0, h - asleepH - coreH - deepH);
             const dimmed = selectedIndex != null && selectedIndex !== i;
             const colors = selectedIndex === i ? ['#4e97ff', '#86adff', '#3a78ff', '#b9cfff'] : ['#6ea8ff', '#9bb7ff', '#5b8bff', '#c6d8ff'];
@@ -386,7 +357,7 @@ export default function SleepScreen() {
       </View>
     );
   };
- 
+
   // Pan responder
   const weekTranslateX = useMemo(() => new Animated.Value(0), []);
   const weekPanResponder = useMemo(() => {
@@ -415,7 +386,7 @@ export default function SleepScreen() {
       onPanResponderTerminate: () => Animated.spring(weekTranslateX, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
     });
   }, [screenWidth]);
- 
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.background, paddingTop: topInset }}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -427,12 +398,12 @@ export default function SleepScreen() {
             <Text style={{ color: '#000', fontSize: 24, fontWeight: '800' }}>Sleep</Text>
           </View>
         </View>
-        
+
         <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: '#D6E4FF', marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View><Text style={{ color: theme.icon, fontSize: 12 }}>Time</Text><Text style={{ color: theme.text, fontSize: 20, fontWeight: '700' }}>{nowStr}</Text></View>
           <View style={{ alignItems: 'center' }}><Text style={{ color: theme.icon, fontSize: 12 }}>Avg Sleep</Text><Text style={{ color: theme.tint, fontSize: 22, fontWeight: '800' }}>{Math.floor(avgAnimated)}h {String(Math.round((avgAnimated%1)*60)).padStart(2,'0')}m</Text></View>
         </View>
-        
+
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Pressable onPress={() => changeMonth(-1)} style={{ padding: 8 }}><Text style={{ color: theme.tint, fontSize: 16 }}>{'<'} Prev</Text></Pressable>
           <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>{formatMonthYear(year, monthIndex)}</Text>
@@ -445,7 +416,7 @@ export default function SleepScreen() {
         </View>
 
         <SelectedWeekDayCard />
-        
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Sleep Schedule</Text>
           <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', marginBottom: 8 }}>
@@ -509,4 +480,4 @@ export default function SleepScreen() {
       </ScrollView>
     </View>
   );
- }
+}
