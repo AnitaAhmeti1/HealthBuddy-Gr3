@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
-import * as Progress from 'react-native-progress';
 import { useRouter } from "expo-router";
+import { useEffect, useState } from 'react';
+import { Alert, Dimensions, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { BarChart } from "react-native-chart-kit";
+import * as Progress from 'react-native-progress';
 
 export default function WaterTracker() {
   const router = useRouter(); 
@@ -12,45 +13,88 @@ export default function WaterTracker() {
   const [dailyHistory, setDailyHistory] = useState([]);
   const [today, setToday] = useState(new Date().toISOString().split('T')[0]);
 
+  const motivationalQuotes = [
+    "Stay hydrated, stay healthy! 💧",
+    "Every sip counts! 🌊",
+    "Keep it flowing! 💦",
+    "Hydration = energy ⚡",
+    "Water your body like a plant 🌱",
+  ];
+  const overhydrationQuotes = [
+    "Whoa! Take it easy, don't overdo it! ⚠️",
+    "Hydration is good, but moderation is key 💧",
+    "Slow down, your body needs balance 🧘‍♂️",
+  ];
+
+  const [quote, setQuote] = useState("");
+
   const getToday = () => new Date().toISOString().split('T')[0];
 
+  const rawProgress = waterIntake / goal;
+  const progress = Math.min(rawProgress, 1);
+  let progressColor = '#00BFFF';
+  if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
+  else if (rawProgress > 1.5) progressColor = '#FF4500';
+
+  // Caktimi i quote bazuar në progres
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedWater = await AsyncStorage.getItem('waterIntake');
-        const savedLog = await AsyncStorage.getItem('drinkingLog');
-        const savedHistory = await AsyncStorage.getItem('dailyHistory');
-        const savedDate = await AsyncStorage.getItem('lastSavedDate');
+    if (rawProgress <= 1) {
+      setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+    } else {
+      setQuote(overhydrationQuotes[Math.floor(Math.random() * overhydrationQuotes.length)]);
+    }
+  }, [waterIntake]);
 
-        if (savedWater !== null) setWaterIntake(JSON.parse(savedWater));
-        if (savedLog !== null) setDrinkingLog(JSON.parse(savedLog));
-        if (savedHistory !== null) setDailyHistory(JSON.parse(savedHistory));
+  // Ngarkimi i të dhënave nga AsyncStorage
+  // Ngarkimi i të dhënave nga AsyncStorage (me kontroll pas orës 09:20)
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      const savedWater = await AsyncStorage.getItem('waterIntake');
+      const savedLog = await AsyncStorage.getItem('drinkingLog');
+      const savedHistory = await AsyncStorage.getItem('dailyHistory');
+      const savedDate = await AsyncStorage.getItem('lastSavedDate');
 
-        const currentDate = getToday();
-        if (!savedDate || savedDate !== currentDate) {
-          await resetDailyIntake(savedDate || currentDate);
-        }
-      } catch (error) {
-        console.log('Error loading data', error);
+      if (savedWater !== null) setWaterIntake(JSON.parse(savedWater));
+      if (savedLog !== null) setDrinkingLog(JSON.parse(savedLog));
+      if (savedHistory !== null) setDailyHistory(JSON.parse(savedHistory));
+
+      const currentDate = getToday();
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      // ✅ Kontrollo nëse është ditë e re DHE ora është pas 09:20
+      if ((!savedDate || savedDate !== currentDate) && 
+          (currentHour > 22 || (currentHour === 22 && currentMinute >= 46))) {
+        await resetDailyIntake(savedDate || currentDate);
       }
-    };
-    loadData();
+    } catch (error) {
+      console.log('Error loading data', error);
+    }
+  };
+  loadData();
+}, []);
 
+  // Planifikimi i reset-it të ditës së re
+  useEffect(() => {
     const scheduleReset = () => {
       const now = new Date();
       const nextReset = new Date();
-      nextReset.setHours(0, 0, 0, 0); // 12:00 AM
-      nextReset.setDate(nextReset.getDate() + 1);
-      const timeout = nextReset.getTime() - now.getTime();
+      nextReset.setHours(22, 46, 0, 0);
+      if (nextReset < now) nextReset.setDate(nextReset.getDate() + 1);
+
       setTimeout(async () => {
         await resetDailyIntake(getToday());
         setToday(getToday());
         scheduleReset();
-      }, timeout);
+      }, nextReset.getTime() - now.getTime());
     };
+
     scheduleReset();
   }, []);
 
+  // Ruajtja e të dhënave në AsyncStorage
   useEffect(() => {
     const saveData = async () => {
       try {
@@ -65,6 +109,7 @@ export default function WaterTracker() {
     saveData();
   }, [waterIntake, drinkingLog, dailyHistory]);
 
+  // Funksionet për shtimin dhe fshirjen e ujit
   const addWater = (amount) => {
     const currentTime = new Date().toLocaleTimeString();
     const newIntake = waterIntake + amount;
@@ -80,7 +125,7 @@ export default function WaterTracker() {
     setWaterIntake(waterIntake - amount);
   };
 
-  // Kontrollon për Hydration Hero badge ditore
+  // Kontrolli i badge "Hydration Hero"
   const checkHydrationBadge = async (currentIntake) => {
     if (currentIntake >= goal) {
       try {
@@ -99,16 +144,19 @@ export default function WaterTracker() {
     }
   };
 
+  // Reset-i i ditës
   const resetDailyIntake = async (previousDate) => {
     try {
       if (previousDate) {
-        const dailyPercent = Math.min(Math.round((waterIntake / goal) * 100), 100);
-        const newHistory = [...dailyHistory, { date: previousDate, percent: dailyPercent }];
+        const dailyPercent = Math.round((waterIntake / goal) * 100);
+
+       const timestamp = new Date().toISOString(); // ruan datën + orën e plotë
+      const newHistory = [...dailyHistory, { date: timestamp, percent: dailyPercent }];
+
         const trimmedHistory = newHistory.slice(-30);
         setDailyHistory(trimmedHistory);
         await AsyncStorage.setItem('dailyHistory', JSON.stringify(trimmedHistory));
 
-        // Ruaj badge për ditën e kaluar nëse ka arritur goal
         if (waterIntake >= goal) {
           const badgesData = await AsyncStorage.getItem("badges");
           const badges = badgesData ? JSON.parse(badgesData) : {};
@@ -126,21 +174,35 @@ export default function WaterTracker() {
     }
   };
 
-  const rawProgress = waterIntake / goal;
-  const progress = Math.min(rawProgress, 1);
-  let progressColor = '#00BFFF';
-  if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
-  else if (rawProgress > 1.5) progressColor = '#FF4500';
+  // Përgatitja e të dhënave për grafik
+// Përgatitja e të dhënave për grafik
+// Përgatitja e të dhënave për grafik
+const recentDays = dailyHistory.slice(-7);
+const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
-  const recentDays = dailyHistory.slice(-7);
+const chartData = {
+  labels: recentDays.map(item => {
+    const dateObj = new Date(item.date);
+    const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+    const date = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${day}\n${date}\n${time}`; // 3 rreshta
+  }),
+  datasets: [
+    {
+      data: recentDays.map(item => item.percent),
+    },
+  ],
+};
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
       <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
         <Text style={styles.backText}>←</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Smart Water Tracker 💧</Text>
+      <Text style={styles.dateText}>Today is {currentDate}</Text>
+      <Text style={styles.quote}>{quote}</Text>
 
       <View style={styles.progressContainer}>
         <Progress.Circle
@@ -158,71 +220,102 @@ export default function WaterTracker() {
         <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
       </View>
 
-      <View style={styles.weekContainer}>
-        <Text style={styles.weekTitle}>Recent days:</Text>
-        <View style={styles.weekRow}>
-          {recentDays.map((item) => (
-            <View key={item.date} style={styles.dayItem}>
-              <Progress.Circle
-                size={45}
-                progress={item.percent / 100}
-                showsText={true}
-                color={'#00BFFF'}
-                unfilledColor={'#E0F7FA'}
-                borderWidth={2}
-                thickness={6}
-                textStyle={{ fontSize: 10, color: '#007ACC' }}
-                formatText={() => `${item.percent}%`}
-              />
-              <Text style={styles.dayLabel}>
-                {new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' })}
-              </Text>
-            </View>
-          ))}
+      {recentDays.length > 0 && (
+        <View style={styles.chartContainer}>
+          <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
+          <BarChart
+            data={chartData}
+            width={Dimensions.get("window").width - 40}
+            height={200}
+            yAxisSuffix="%"
+            chartConfig={{
+              backgroundColor: "#E3F2FD",
+              backgroundGradientFrom: "#E3F2FD",
+              backgroundGradientTo: "#BBDEFB",
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
+              labelColor: () => "#007ACC",
+              propsForLabels: { fontSize: 10 },
+            }}
+            style={styles.chart}
+          />
         </View>
-      </View>
+      )}
 
-      <View style={styles.buttonRow}>
-        {[200, 300, 400, 500].map(amount => (
-          <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
-            <Text style={styles.addButtonText}>+{amount} ml</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <View style={{ width: '100%', paddingHorizontal: 10 }}>
+  <View style={styles.buttonRow}>
+    {[200, 300, 400, 500].map(amount => (
+      <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
+        <Text style={styles.addButtonText}>+{amount} ml</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
 
-      <FlatList
-        data={drinkingLog}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.logItem}>
-            <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
-            <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
-    </View>
+  <FlatList
+    style={{ flex: 1 }}
+    contentContainerStyle={{ paddingBottom: 20 }}
+    data={drinkingLog}
+    keyExtractor={item => item.id}
+    renderItem={({ item }) => (
+      <View style={styles.logItem}>
+        <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
+        <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    )}
+  />
+</View>
+        
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', paddingTop: 60, backgroundColor: '#E3F2FD' },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#007ACC', marginBottom: 25 },
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
+    backgroundColor: '#E3F2FD',
+  },
+  dateText: { fontSize: 18, color: '#007ACC', fontWeight: '500', marginBottom: 8 },
+  quote: { fontSize: 16, color: '#444', fontStyle: 'italic', marginBottom: 15, textAlign: 'center', paddingHorizontal: 20 },
   progressContainer: { alignItems: 'center', justifyContent: 'center', marginBottom: 25 },
   subText: { fontSize: 16, color: '#555', marginTop: 10 },
-  weekContainer: { alignItems: 'center', marginVertical: 10 },
-  weekTitle: { fontSize: 18, fontWeight: 'bold', color: '#007ACC', marginBottom: 8 },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-around', width: '95%' },
-  dayItem: { alignItems: 'center' },
-  dayLabel: { marginTop: 4, fontSize: 12, color: '#007ACC' },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-around', width: '90%', marginVertical: 10, flexWrap: 'wrap' },
-  addButton: { backgroundColor: '#00BFFF', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, marginHorizontal: 3, minWidth: 70, alignItems: 'center' },
-  addButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  logItem: { backgroundColor: '#fff', paddingVertical: 20, paddingHorizontal: 15, borderRadius: 10, marginVertical: 8, width: '95%', alignSelf: 'center', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 },
+  chartContainer: { marginBottom: 20 },
+  weekTitle: { fontSize: 18, fontWeight: 'bold', color: '#007ACC', marginBottom: 10, textAlign: 'center' },
+  chart: { borderRadius: 10 },
+  buttonRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between', // për të mbushur gjithë hapësirën
+  width: '100%',
+  marginVertical: 10,
+},
+addButton: {
+  backgroundColor: '#00BFFF',
+  paddingVertical: 12,
+  flex: 1,              // bën që butonat të zgjerojnë në mënyrë të barabartë
+  marginHorizontal: 4,
+  borderRadius: 20,
+  alignItems: 'center',
+},
+logItem: {
+  backgroundColor: '#fff',
+  paddingVertical: 15,
+  paddingHorizontal: 15,
+  borderRadius: 10,
+  marginVertical: 5,
+  width: '100%',         // zgjerohet e gjithë gjerësia
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+
   logText: { fontSize: 17, color: '#333', flex: 1, flexWrap: 'wrap' },
   deleteButton: { backgroundColor: '#FF6347', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8 },
   deleteButtonText: { color: '#fff', fontWeight: 'bold' },
   backButton: { position: "absolute", top: 55, left: 20, borderRadius: 12, padding: 8, zIndex: 10 },
   backText: { fontSize: 24, color: "#0026ffff", fontWeight: "bold" },
+  
 });
