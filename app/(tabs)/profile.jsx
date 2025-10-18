@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -10,6 +14,94 @@ export default function ProfileScreen() {
     email: 'john.doe@example.com',
     memberSince: '2024',
   });
+
+  const [quickStats, setQuickStats] = useState([
+    { icon: '💧', label: 'Water Today', value: '0L' },
+    { icon: '👣', label: 'Steps', value: '0' },
+    { icon: '❤️', label: 'Heart Rate', value: '-- bpm' },
+    { icon: '😴', label: 'Sleep', value: '0h' },
+  ]);
+
+  useEffect(() => {
+    loadTodayStats();
+  }, []);
+
+  const loadTodayStats = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const waterIntake = await AsyncStorage.getItem('waterIntake');
+      const waterML = waterIntake ? parseInt(JSON.parse(waterIntake)) : 0;
+      const waterLiters = (waterML / 1000).toFixed(1);
+      
+      let steps = 0;
+      const stepsData = await AsyncStorage.getItem('stepsData');
+      if (stepsData) {
+        const parsed = JSON.parse(stepsData);
+        steps = parsed.steps || 0;
+      } else {
+        steps = 0;
+      }
+      
+      const bpRecords = await AsyncStorage.getItem('bloodPressureRecords');
+      let heartRate = '-- bpm';
+      if (bpRecords) {
+        const records = JSON.parse(bpRecords);
+        if (records.length > 0) {
+          const latestRecord = records[records.length - 1];
+          heartRate = `${latestRecord.pulse} bpm`;
+        }
+      }
+      
+      const sleepSessions = await AsyncStorage.getItem('sleep.sessions.v1');
+      let sleepHours = '0h';
+      if (sleepSessions) {
+        const sessions = JSON.parse(sleepSessions);
+        const todaySessions = sessions.filter(session => {
+          const sessionDate = new Date(session.startISO).toISOString().split('T')[0];
+          return sessionDate === today;
+        });
+        
+        if (todaySessions.length > 0) {
+          let totalSleepMinutes = 0;
+          todaySessions.forEach(session => {
+            const start = new Date(session.startISO);
+            const end = new Date(session.endISO);
+            const duration = (end - start) / (1000 * 60);
+            totalSleepMinutes += duration;
+          });
+          
+          const sleepHoursValue = (totalSleepMinutes / 60).toFixed(1);
+          sleepHours = `${sleepHoursValue}h`;
+        } else {
+          if (sessions.length > 0) {
+            const lastSession = sessions[sessions.length - 1];
+            const start = new Date(lastSession.startISO);
+            const end = new Date(lastSession.endISO);
+            const duration = (end - start) / (1000 * 60);
+            const sleepHoursValue = (duration / 60).toFixed(1);
+            sleepHours = `${sleepHoursValue}h`;
+          }
+        }
+      }
+
+      setQuickStats([
+        { icon: '💧', label: 'Water Today', value: `${waterLiters}L` },
+        { icon: '👣', label: 'Steps', value: steps.toLocaleString() },
+        { icon: '❤️', label: 'Heart Rate', value: heartRate },
+        { icon: '😴', label: 'Sleep', value: sleepHours },
+      ]);
+
+    } catch (error) {
+      console.log('Error loading today stats:', error);
+      setQuickStats([
+        { icon: '💧', label: 'Water Today', value: '0L' },
+        { icon: '👣', label: 'Steps', value: '0' },
+        { icon: '❤️', label: 'Heart Rate', value: '-- bpm' },
+        { icon: '😴', label: 'Sleep', value: '0h' },
+      ]);
+    }
+  };
 
   const handleEditProfile = () => {
     Alert.alert('Edit Profile', 'Edit profile functionality will be added soon!');
@@ -32,12 +124,12 @@ export default function ProfileScreen() {
     );
   };
 
-  const quickStats = [
-    { icon: '💧', label: 'Water Today', value: '2.1L' },
-    { icon: '👣', label: 'Steps', value: '8,542' },
-    { icon: '❤️', label: 'Heart Rate', value: '72 bpm' },
-    { icon: '😴', label: 'Sleep', value: '7.2h' },
-  ];
+useFocusEffect(
+  useCallback(() => {
+    loadTodayStats();
+  }, [])
+);
+
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -69,6 +161,12 @@ export default function ProfileScreen() {
             </View>
           ))}
         </View>
+        
+        {/* Refresh Button */}
+        <TouchableOpacity style={styles.refreshButton} onPress={loadTodayStats}>
+          <Ionicons name="refresh-outline" size={16} color="#007AFF" />
+          <Text style={styles.refreshButtonText}>Refresh Stats</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Menu Options */}
@@ -219,6 +317,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    marginTop: 10,
+  },
+  refreshButtonText: {
+    color: '#007AFF',
+    fontWeight: '600',
+    marginLeft: 8,
   },
   menuItem: {
     flexDirection: 'row',
