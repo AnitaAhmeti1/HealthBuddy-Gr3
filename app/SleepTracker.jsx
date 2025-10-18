@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Appearance, Dimensions, PanResponder, Platform, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 
-// Helper functions
 const pad2 = (n) => n < 10 ? `0${n}` : String(n);
 const formatYYYYMMDD = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const formatMonthYear = (year, monthIndex) => new Date(year, monthIndex, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
@@ -55,7 +54,6 @@ const splitSessionAcrossMidnight = (startISO, endISO) => {
   return result;
 };
 
-// Storage (fallback in-memory for environments without localStorage)
 const memoryStore = {};
 const storage = {
   async getItem(key) {
@@ -72,7 +70,6 @@ const storage = {
   },
 };
 
-// Colors
 const Colors = {
   light: { text: '#0a0f1a', background: '#ffffff', tint: '#6ea8ff', icon: '#7083a1' },
   dark: { text: '#E6EAEE', background: '#0b1220', tint: '#8fbaff', icon: '#a8b4c6' },
@@ -238,7 +235,6 @@ export default function SleepScreen() {
     setMonthIndex(base.getMonth());
   }, [year, monthIndex]);
 
-  // Styles
   const styles = {
     sectionTitle: { fontSize: 20, fontWeight: '600', color: theme.text, marginBottom: 8 },
     card: { backgroundColor: '#fff', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: '#D6E4FF', marginBottom: 16 },
@@ -249,7 +245,6 @@ export default function SleepScreen() {
     backText: { fontSize: 24, color: theme.tint, fontWeight: '700' },
   };
 
-  // Number rotator component
   const NumberRotator = ({ value, onChange, min, max, step = 1 }) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <Pressable onPress={() => onChange(value <= min ? max : Math.max(min, value - step))} style={styles.button}>
@@ -275,7 +270,6 @@ export default function SleepScreen() {
     );
   };
 
-  // Chart helpers
   const totalMinutesForDateKey = (dateKey) => Math.round((sleepByDay[dateKey] ?? 0) * 60);
   const findWeekRangeFromOffset = (offset) => {
     const today = new Date();
@@ -358,7 +352,6 @@ export default function SleepScreen() {
     );
   };
 
-  // Pan responder
   const weekTranslateX = useMemo(() => new Animated.Value(0), []);
   const weekPanResponder = useMemo(() => {
     const threshold = Math.max(80, Math.floor(screenWidth / 4));
