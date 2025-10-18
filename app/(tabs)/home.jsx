@@ -41,7 +41,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/sleepTracker")}
+          onPress={() => router.push("/SleepTracker")}
         >
           <Ionicons name="bed-outline" size={40} color="#6A5ACD" />
           <Text style={styles.cardTitle}>Sleep Tracker</Text>
