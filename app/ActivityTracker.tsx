@@ -5,14 +5,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
+import { router } from "expo-router";
 
 type Badge = {
   id: string;
   label: string;
   threshold: number;
 };
+
 
 const BADGES: Badge[] = [
   { id: "starter", label: "First 100!", threshold: 100 },
@@ -21,7 +24,9 @@ const BADGES: Badge[] = [
   { id: "champ", label: "10K Champ", threshold: 10000 },
 ];
 
+
 export default function ActivityTrackerScreen() {
+
   const [steps, setSteps] = useState<number>(0);
   const [dailyGoal, setDailyGoal] = useState<number>(6000);
   const [level, setLevel] = useState<number>(1);
@@ -71,6 +76,7 @@ export default function ActivityTrackerScreen() {
         }
         nextHistory = days;
       }
+   
       return nextHistory.map((d, idx) =>
         idx === nextHistory.length - 1
           ? { ...d, steps: Math.max(0, d.steps + count) }
@@ -92,9 +98,15 @@ export default function ActivityTrackerScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      
       <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Activity Tracker</Text>
+        </View>
         <Text style={styles.headerEmoji}>🚶‍♂️</Text>
-        <Text style={styles.title}>Activity Tracker</Text>
         <Text style={{ marginTop: 4 }}>Count steps and level up your day.</Text>
       </View>
 
@@ -107,12 +119,14 @@ export default function ActivityTrackerScreen() {
           </View>
         </View>
 
+       
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
         </View>
         <Text style={{ marginTop: 4 }}>
           {progressPct}% of {dailyGoal.toLocaleString()} goal
         </Text>
+
 
         {Platform.select({
           web: (
@@ -146,6 +160,7 @@ export default function ActivityTrackerScreen() {
         })}
       </View>
 
+    
       <View style={styles.card}>
         <Text style={styles.subtitle}>Level</Text>
         <View style={styles.levelRow}>
@@ -158,6 +173,7 @@ export default function ActivityTrackerScreen() {
         </Text>
       </View>
 
+ 
       <View style={styles.card}>
         <Text style={styles.subtitle}>Badges</Text>
         <View style={styles.badgesRow}>
@@ -186,6 +202,7 @@ export default function ActivityTrackerScreen() {
         </View>
       </View>
 
+  
       <View style={styles.card}>
         <Text style={styles.subtitle}>Daily & Weekly</Text>
         <View style={styles.totalsRow}>
@@ -222,6 +239,7 @@ export default function ActivityTrackerScreen() {
         </View>
       </View>
 
+     
       <Pressable onPress={handleTap} style={styles.fab}>
         <Text style={styles.fabIcon}>＋</Text>
         <Text style={styles.fabText}>Add Steps</Text>
@@ -233,6 +251,9 @@ export default function ActivityTrackerScreen() {
 const styles = StyleSheet.create({
   container: { padding: 16 },
   header: { marginBottom: 12 },
+  headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  backButton: { padding: 8, marginRight: 8 },
+  backText: { fontSize: 24, color: "#54C29A", fontWeight: "700" },
   headerEmoji: { fontSize: 48, marginBottom: 4 },
   title: { fontSize: 24, fontWeight: "700", marginBottom: 2 },
   card: {
@@ -330,4 +351,3 @@ const styles = StyleSheet.create({
   fabIcon: { color: "#fff", fontSize: 20, marginRight: 6 },
   fabText: { color: "#fff", fontWeight: "700" },
 });
-
