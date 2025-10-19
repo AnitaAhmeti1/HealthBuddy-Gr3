@@ -9,13 +9,13 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Badge = {
   id: string;
   label: string;
   threshold: number;
 };
-
 
 const BADGES: Badge[] = [
   { id: "starter", label: "First 100!", threshold: 100 },
@@ -24,16 +24,12 @@ const BADGES: Badge[] = [
   { id: "champ", label: "10K Champ", threshold: 10000 },
 ];
 
-
 export default function ActivityTrackerScreen() {
-
   const [steps, setSteps] = useState<number>(0);
   const [dailyGoal, setDailyGoal] = useState<number>(6000);
   const [level, setLevel] = useState<number>(1);
   const [lastTapTs, setLastTapTs] = useState<number>(0);
-  const [history, setHistory] = useState<
-    Array<{ dateKey: string; steps: number }>
-  >([]);
+  const [history, setHistory] = useState<Array<{ dateKey: string; steps: number }>>([]);
 
   useEffect(() => {
     const today = new Date();
@@ -50,9 +46,25 @@ export default function ActivityTrackerScreen() {
   const progressPct = Math.min(100, Math.round((steps / dailyGoal) * 100));
   const weeklyTotal = history.reduce((sum, d) => sum + d.steps, 0);
 
+  // Funksioni për ruajtjen e Step Master badge
+  const unlockStepMasterBadge = async (currentSteps: number) => {
+    if (currentSteps >= 8000) {
+      const badgeData = await AsyncStorage.getItem("badges");
+      const storedBadges = badgeData ? JSON.parse(badgeData) : {};
+      const today = new Date().toISOString().split("T")[0];
+
+      if (storedBadges.stepMasterDate !== today) {
+        storedBadges.stepMasterDate = today;
+        await AsyncStorage.setItem("badges", JSON.stringify(storedBadges));
+        console.log("🏆 Step Master badge unlocked!");
+      }
+    }
+  };
+
   const handleAddSteps = (count: number) => {
     setSteps((prev) => {
       const next = Math.max(0, prev + count);
+      unlockStepMasterBadge(next);
       if (next >= dailyGoal) {
         setLevel((l) => l + 1);
         setDailyGoal((g) => Math.round(g * 1.15));
@@ -70,13 +82,12 @@ export default function ActivityTrackerScreen() {
           const d = new Date();
           d.setDate(d.getDate() - i);
           const dateKey = d.toISOString().slice(0, 10);
-          const match =
-            prevHistory.find((h) => h.dateKey === dateKey)?.steps ?? 0;
+          const match = prevHistory.find((h) => h.dateKey === dateKey)?.steps ?? 0;
           days.push({ dateKey, steps: match });
         }
         nextHistory = days;
       }
-   
+
       return nextHistory.map((d, idx) =>
         idx === nextHistory.length - 1
           ? { ...d, steps: Math.max(0, d.steps + count) }
@@ -98,7 +109,6 @@ export default function ActivityTrackerScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
@@ -110,6 +120,7 @@ export default function ActivityTrackerScreen() {
         <Text style={{ marginTop: 4 }}>Count steps and level up your day.</Text>
       </View>
 
+      {/* Today's Steps Card */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Today's Steps</Text>
         <View style={styles.circleContainer}>
@@ -119,7 +130,6 @@ export default function ActivityTrackerScreen() {
           </View>
         </View>
 
-       
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
         </View>
@@ -127,40 +137,29 @@ export default function ActivityTrackerScreen() {
           {progressPct}% of {dailyGoal.toLocaleString()} goal
         </Text>
 
-
         {Platform.select({
           web: (
             <View style={styles.simControls}>
-              <Pressable
-                onPress={() => handleAddSteps(100)}
-                style={[styles.btn, styles.btnPrimary]}
-              >
+              <Pressable onPress={() => handleAddSteps(100)} style={[styles.btn, styles.btnPrimary]}>
                 <Text style={styles.btnText}>+100</Text>
               </Pressable>
-              <Pressable
-                onPress={() => handleAddSteps(1000)}
-                style={[styles.btn, styles.btnSecondary]}
-              >
+              <Pressable onPress={() => handleAddSteps(1000)} style={[styles.btn, styles.btnSecondary]}>
                 <Text style={styles.btnText}>+1,000</Text>
               </Pressable>
-              <Pressable
-                onPress={() => setSteps(0)}
-                style={[styles.btn, styles.btnGhost]}
-              >
+              <Pressable onPress={() => setSteps(0)} style={[styles.btn, styles.btnGhost]}>
                 <Text style={styles.btnText}>Reset</Text>
               </Pressable>
             </View>
           ),
           default: (
             <Text style={{ marginTop: 8 }}>
-              Tap the big button below to simulate steps. Double-tap for a
-              boost!
+              Tap the big button below to simulate steps. Double-tap for a boost!
             </Text>
           ),
         })}
       </View>
 
-    
+      {/* Level Card */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Level</Text>
         <View style={styles.levelRow}>
@@ -168,31 +167,19 @@ export default function ActivityTrackerScreen() {
           <Text style={styles.levelText}>Lv. {level}</Text>
         </View>
         <Text style={{ marginTop: 4 }}>
-          Reach your goal to level up. Each level raises your daily goal
-          slightly to keep it challenging.
+          Reach your goal to level up. Each level raises your daily goal slightly to keep it challenging.
         </Text>
       </View>
 
- 
+      {/* Badges Card */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Badges</Text>
         <View style={styles.badgesRow}>
           {BADGES.map((badge) => {
             const unlocked = steps >= badge.threshold;
             return (
-              <View
-                key={badge.id}
-                style={[
-                  styles.badge,
-                  unlocked ? styles.badgeOn : styles.badgeOff,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.badgeIcon,
-                    { color: unlocked ? "#fff" : "#888" },
-                  ]}
-                >
+              <View key={badge.id} style={[styles.badge, unlocked ? styles.badgeOn : styles.badgeOff]}>
+                <Text style={[styles.badgeIcon, { color: unlocked ? "#fff" : "#888" }]}>
                   {unlocked ? "🏅" : "🔘"}
                 </Text>
                 <Text style={styles.badgeText}>{badge.label}</Text>
@@ -202,35 +189,26 @@ export default function ActivityTrackerScreen() {
         </View>
       </View>
 
-  
+      {/* Daily & Weekly Card */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Daily & Weekly</Text>
         <View style={styles.totalsRow}>
           <View style={styles.totalPill}>
             <Text style={styles.totalIcon}>📅</Text>
-            <Text style={styles.totalText}>
-              Today: {steps.toLocaleString()}
-            </Text>
+            <Text style={styles.totalText}>Today: {steps.toLocaleString()}</Text>
           </View>
           <View style={styles.totalPill}>
             <Text style={styles.totalIcon}>🗓️</Text>
-            <Text style={styles.totalText}>
-              Week: {weeklyTotal.toLocaleString()}
-            </Text>
+            <Text style={styles.totalText}>Week: {weeklyTotal.toLocaleString()}</Text>
           </View>
         </View>
         <View style={styles.historyList}>
           {history.map((h, idx) => {
             const date = new Date(h.dateKey);
-            const weekday = date.toLocaleDateString(undefined, {
-              weekday: "short",
-            });
+            const weekday = date.toLocaleDateString(undefined, { weekday: "short" });
             const isToday = idx === history.length - 1;
             return (
-              <View
-                key={h.dateKey}
-                style={[styles.historyItem, isToday && styles.historyToday]}
-              >
+              <View key={h.dateKey} style={[styles.historyItem, isToday && styles.historyToday]}>
                 <Text style={styles.historyDay}>{weekday}</Text>
                 <Text>{h.steps.toLocaleString()}</Text>
               </View>
@@ -239,7 +217,6 @@ export default function ActivityTrackerScreen() {
         </View>
       </View>
 
-     
       <Pressable onPress={handleTap} style={styles.fab}>
         <Text style={styles.fabIcon}>＋</Text>
         <Text style={styles.fabText}>Add Steps</Text>
