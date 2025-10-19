@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 type Badge = {
   id: string;
@@ -29,42 +29,39 @@ export default function ActivityTrackerScreen() {
   const [dailyGoal, setDailyGoal] = useState<number>(6000);
   const [level, setLevel] = useState<number>(1);
   const [lastTapTs, setLastTapTs] = useState<number>(0);
-  const [history, setHistory] = useState<Array<{ dateKey: string; steps: number }>>([]);
+  const [history, setHistory] = useState<
+    Array<{ dateKey: string; steps: number }>
+  >([]);
 
   useEffect(() => {
-    const today = new Date();
-    const days: Array<{ dateKey: string; steps: number }> = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const dateKey = d.toISOString().slice(0, 10);
-      days.push({ dateKey, steps: 0 });
-    }
-    setHistory(days);
+    const loadData = async () => {
+      const storedSteps = await AsyncStorage.getItem("steps");
+      const storedHistory = await AsyncStorage.getItem("history");
+
+      if (storedSteps) setSteps(Number(storedSteps));
+      if (storedHistory) setHistory(JSON.parse(storedHistory));
+      else {
+        const today = new Date();
+        const days: Array<{ dateKey: string; steps: number }> = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          const dateKey = d.toISOString().slice(0, 10);
+          days.push({ dateKey, steps: 0 });
+        }
+        setHistory(days);
+      }
+    };
+    loadData();
   }, []);
 
   const progressPct = Math.min(100, Math.round((steps / dailyGoal) * 100));
   const weeklyTotal = history.reduce((sum, d) => sum + d.steps, 0);
 
-  // Funksioni për ruajtjen e Step Master badge
-  const unlockStepMasterBadge = async (currentSteps: number) => {
-    if (currentSteps >= 8000) {
-      const badgeData = await AsyncStorage.getItem("badges");
-      const storedBadges = badgeData ? JSON.parse(badgeData) : {};
-      const today = new Date().toISOString().split("T")[0];
-
-      if (storedBadges.stepMasterDate !== today) {
-        storedBadges.stepMasterDate = today;
-        await AsyncStorage.setItem("badges", JSON.stringify(storedBadges));
-        console.log("🏆 Step Master badge unlocked!");
-      }
-    }
-  };
-
   const handleAddSteps = (count: number) => {
     setSteps((prev) => {
       const next = Math.max(0, prev + count);
-      unlockStepMasterBadge(next);
+      AsyncStorage.setItem("steps", next.toString()); 
       if (next >= dailyGoal) {
         setLevel((l) => l + 1);
         setDailyGoal((g) => Math.round(g * 1.15));
@@ -88,11 +85,14 @@ export default function ActivityTrackerScreen() {
         nextHistory = days;
       }
 
-      return nextHistory.map((d, idx) =>
+      const updatedHistory = nextHistory.map((d, idx) =>
         idx === nextHistory.length - 1
           ? { ...d, steps: Math.max(0, d.steps + count) }
           : d
       );
+
+      AsyncStorage.setItem("history", JSON.stringify(updatedHistory)); 
+      return updatedHistory;
     });
   };
 
@@ -110,17 +110,19 @@ export default function ActivityTrackerScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
-            <Text style={styles.backText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Activity Tracker</Text>
-        </View>
-        <Text style={styles.headerEmoji}>🚶‍♂️</Text>
-        <Text style={{ marginTop: 4 }}>Count steps and level up your day.</Text>
-      </View>
+  <View style={styles.headerRow}>
+    <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
+      <Text style={styles.backText}>←</Text>
+    </TouchableOpacity>
+  </View>
 
-      {/* Today's Steps Card */}
+  <Text style={styles.title}>Steps Tracker</Text>
+
+  <Text style={styles.headerEmoji}>🚶‍♂️</Text>
+  <Text style={{ marginTop: 4, textAlign: "center" }}>Count steps and level up your day.</Text>
+</View>
+
+
       <View style={styles.card}>
         <Text style={styles.subtitle}>Today's Steps</Text>
         <View style={styles.circleContainer}>
@@ -146,7 +148,7 @@ export default function ActivityTrackerScreen() {
               <Pressable onPress={() => handleAddSteps(1000)} style={[styles.btn, styles.btnSecondary]}>
                 <Text style={styles.btnText}>+1,000</Text>
               </Pressable>
-              <Pressable onPress={() => setSteps(0)} style={[styles.btn, styles.btnGhost]}>
+              <Pressable onPress={() => { setSteps(0); AsyncStorage.setItem("steps", "0"); setHistory([]); AsyncStorage.removeItem("history"); }} style={[styles.btn, styles.btnGhost]}>
                 <Text style={styles.btnText}>Reset</Text>
               </Pressable>
             </View>
@@ -159,7 +161,6 @@ export default function ActivityTrackerScreen() {
         })}
       </View>
 
-      {/* Level Card */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Level</Text>
         <View style={styles.levelRow}>
@@ -171,7 +172,6 @@ export default function ActivityTrackerScreen() {
         </Text>
       </View>
 
-      {/* Badges Card */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Badges</Text>
         <View style={styles.badgesRow}>
@@ -189,7 +189,6 @@ export default function ActivityTrackerScreen() {
         </View>
       </View>
 
-      {/* Daily & Weekly Card */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Daily & Weekly</Text>
         <View style={styles.totalsRow}>
@@ -231,100 +230,39 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   backButton: { padding: 8, marginRight: 8 },
   backText: { fontSize: 24, color: "#54C29A", fontWeight: "700" },
-  headerEmoji: { fontSize: 48, marginBottom: 4 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 2 },
-  card: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.04)",
-    marginBottom: 12,
-  },
+  headerEmoji: { fontSize: 48, marginBottom: 4, textAlign: "center"},
+  title: { fontSize: 24, fontWeight: "700", marginVertical:8, textAlign: "center" },
+  card: { padding: 12, borderRadius: 12, backgroundColor: "rgba(0,0,0,0.04)", marginBottom: 12 },
   stepsText: { fontSize: 44, fontWeight: "700" },
   subtitle: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
   circleContainer: { alignItems: "center", marginVertical: 12 },
-  circle: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 6,
-    borderColor: "#54C29A",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  progressBar: {
-    height: 10,
-    backgroundColor: "rgba(0,0,0,0.08)",
-    borderRadius: 6,
-    overflow: "hidden",
-    marginVertical: 6,
-  },
+  circle: { width: 150, height: 150, borderRadius: 75, borderWidth: 6, borderColor: "#54C29A", justifyContent: "center", alignItems: "center" },
+  progressBar: { height: 10, backgroundColor: "rgba(0,0,0,0.08)", borderRadius: 6, overflow: "hidden", marginVertical: 6 },
   progressFill: { height: "100%", backgroundColor: "#54C29A" },
   simControls: { flexDirection: "row", marginTop: 8 },
-  btn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginRight: 8,
-  },
+  btn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, marginRight: 8 },
   btnPrimary: { backgroundColor: "#54C29A" },
   btnSecondary: { backgroundColor: "#50A2F9" },
-  btnGhost: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.15)",
-  },
+  btnGhost: { backgroundColor: "transparent", borderWidth: 1, borderColor: "rgba(0,0,0,0.15)" },
   btnText: { color: "#3c3c3cff", fontWeight: "700" },
   levelRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
   levelIcon: { fontSize: 22, color: "#E6B800" },
   levelText: { marginLeft: 8, fontSize: 20, fontWeight: "700" },
   badgesRow: { flexDirection: "row", flexWrap: "wrap" },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    marginRight: 8,
-    marginBottom: 6,
-  },
+  badge: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, marginRight: 8, marginBottom: 6 },
   badgeOn: { backgroundColor: "#54C29A" },
   badgeOff: { backgroundColor: "rgba(0,0,0,0.06)" },
   badgeText: { color: "#4e4c4cff" },
   badgeIcon: { fontSize: 16, marginRight: 4 },
   totalsRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
-  totalPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.06)",
-    marginRight: 8,
-    marginBottom: 8,
-  },
+  totalPill: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.06)", marginRight: 8, marginBottom: 8 },
   totalIcon: { fontSize: 16, marginRight: 4 },
   totalText: { fontWeight: "700" },
   historyList: { flexDirection: "row", flexWrap: "wrap" },
-  historyItem: {
-    width: "30%",
-    padding: 8,
-    borderRadius: 10,
-    backgroundColor: "rgba(0,0,0,0.04)",
-    marginRight: 8,
-    marginBottom: 8,
-  },
+  historyItem: { width: "30%", padding: 8, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.04)", marginRight: 8, marginBottom: 8 },
   historyToday: { borderWidth: 1, borderColor: "#54C29A" },
   historyDay: { fontWeight: "700", marginBottom: 2 },
-  fab: {
-    marginTop: 16,
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: "#54C29A",
-  },
+  fab: { marginTop: 16, alignSelf: "center", flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 999, backgroundColor: "#54C29A" },
   fabIcon: { color: "#fff", fontSize: 20, marginRight: 6 },
   fabText: { color: "#fff", fontWeight: "700" },
 });
