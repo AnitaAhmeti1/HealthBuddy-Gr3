@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, Appearance, Dimensions, PanResponder, Platform, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Appearance, Dimensions, PanResponder, Platform, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from "@react-native-async-storage/async-storage"; 
 
@@ -78,6 +78,26 @@ const Colors = {
 
 const useLocalColorScheme = () => Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
 
+const unlockSleepBadge = async (sleepByDay) => {
+  try {
+    const todayKey = formatYYYYMMDD(new Date());
+    const hoursSleptToday = sleepByDay[todayKey] ?? 0;
+
+    if (hoursSleptToday >= 7) {
+      const badgeDataRaw = await AsyncStorage.getItem("badges");
+      const badges = badgeDataRaw ? JSON.parse(badgeDataRaw) : {};
+      
+      if (badges.sleepChampDate !== todayKey) {
+        badges.sleepChampDate = todayKey;
+        await AsyncStorage.setItem("badges", JSON.stringify(badges));
+        Alert.alert("🏆 Sleep Champ unlocked!", "You've slept more than 7 hours!");
+      }
+    }
+  } catch (err) {
+    console.log("Error unlocking sleep badge:", err);
+  }
+};
+
 export default function SleepScreen() {
   const colorMode = useLocalColorScheme();
   const theme = Colors[colorMode];
@@ -146,9 +166,8 @@ export default function SleepScreen() {
   }, [sessions]);
 
   useEffect(() => {
-  unlockSleepBadge();
-}, [sleepByDay]);
-
+    unlockSleepBadge(sleepByDay);
+  }, [sleepByDay]);
 
   const weeks = useMemo(() => groupByWeeks(monthDays), [monthDays]);
   const weeklyAverages = useMemo(() => {
@@ -275,7 +294,6 @@ export default function SleepScreen() {
       </View>
     );
   };
-
 
   const totalMinutesForDateKey = (dateKey) => Math.round((sleepByDay[dateKey] ?? 0) * 60);
   const findWeekRangeFromOffset = (offset) => {
@@ -486,19 +504,3 @@ export default function SleepScreen() {
     </View>
   );
 }
-const unlockSleepBadge = async () => {
-  try {
-    const todayKey = formatYYYYMMDD(new Date());
-    const hoursSleptToday = sleepByDay[todayKey] ?? 0;
-
-    if (hoursSleptToday >= 7) {
-      const badgeDataRaw = await AsyncStorage.getItem("badges");
-      const badges = badgeDataRaw ? JSON.parse(badgeDataRaw) : {};
-      badges.sleepChampDate = todayKey; // save today's date as unlocked
-      await AsyncStorage.setItem("badges", JSON.stringify(badges));
-      console.log("Sleep badge unlocked!");
-    }
-  } catch (err) {
-    console.log("Error unlocking sleep badge:", err);
-  }
-};

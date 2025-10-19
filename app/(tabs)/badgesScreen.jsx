@@ -43,7 +43,7 @@ export default function BadgesScreen() {
           desc: "Slept more than 7 hours",
           icon: "bed-outline",
           color: "#6A5ACD",
-          unlocked: !!storedBadges.sleepChampDate,
+          unlocked: storedBadges.sleepChampDate === today,
         },
       ];
 
@@ -66,11 +66,18 @@ export default function BadgesScreen() {
               item.unlocked ? styles.unlocked : styles.locked,
             ]}
           >
-            <Ionicons name={item.icon} size={40} color={item.color} />
+            <Ionicons 
+              name={item.icon} 
+              size={40} 
+              color={item.unlocked ? item.color : "#999"} 
+            />
             <Text style={styles.badgeTitle}>{item.title}</Text>
             <Text style={styles.badgeDesc}>{item.desc}</Text>
-            <Text style={styles.badgeStatus}>
-              {item.unlocked ? "Unlocked" : "Locked"}
+            <Text style={[
+              styles.badgeStatus,
+              { color: item.unlocked ? "#32CD32" : "#FF6347" }
+            ]}>
+              {item.unlocked ? "🎉 Unlocked Today!" : "🔒 Locked"}
             </Text>
           </View>
         )}
@@ -115,16 +122,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 5,
+    textAlign: "center",
   },
   badgeStatus: {
     fontSize: 14,
     marginTop: 8,
+    fontWeight: "bold",
   },
   unlocked: {
     borderColor: "#32CD32",
     borderWidth: 2,
   },
   locked: {
-    opacity: 0.5,
+    opacity: 0.7,
+    borderColor: "#ccc",
+    borderWidth: 1,
   },
 });

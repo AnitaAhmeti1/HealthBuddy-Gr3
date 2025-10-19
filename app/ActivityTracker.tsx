@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -23,6 +24,24 @@ const BADGES: Badge[] = [
   { id: "pro", label: "5K Pro", threshold: 5000 },
   { id: "champ", label: "10K Champ", threshold: 10000 },
 ];
+
+const checkStepBadge = async (currentSteps: number) => {
+  if (currentSteps >= 8000) {
+    try {
+      const badgesData = await AsyncStorage.getItem("badges");
+      const badges = badgesData ? JSON.parse(badgesData) : {};
+      const todayDate = new Date().toISOString().split("T")[0];
+
+      if (badges.stepMasterDate !== todayDate) {
+        badges.stepMasterDate = todayDate;
+        await AsyncStorage.setItem("badges", JSON.stringify(badges));
+        Alert.alert("🏆 Step Master unlocked!", "You've reached 8000 steps today!");
+      }
+    } catch (e) {
+      console.log("Error updating step badge", e);
+    }
+  }
+};
 
 export default function ActivityTrackerScreen() {
   const [steps, setSteps] = useState<number>(0);
@@ -62,6 +81,10 @@ export default function ActivityTrackerScreen() {
     setSteps((prev) => {
       const next = Math.max(0, prev + count);
       AsyncStorage.setItem("steps", next.toString()); 
+      
+      // Check for step badge
+      checkStepBadge(next);
+      
       if (next >= dailyGoal) {
         setLevel((l) => l + 1);
         setDailyGoal((g) => Math.round(g * 1.15));
@@ -110,18 +133,17 @@ export default function ActivityTrackerScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
-  <View style={styles.headerRow}>
-    <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
-      <Text style={styles.backText}>←</Text>
-    </TouchableOpacity>
-  </View>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+        </View>
 
-  <Text style={styles.title}>Steps Tracker</Text>
+        <Text style={styles.title}>Steps Tracker</Text>
 
-  <Text style={styles.headerEmoji}>🚶‍♂️</Text>
-  <Text style={{ marginTop: 4, textAlign: "center" }}>Count steps and level up your day.</Text>
-</View>
-
+        <Text style={styles.headerEmoji}>🚶‍♂️</Text>
+        <Text style={{ marginTop: 4, textAlign: "center" }}>Count steps and level up your day.</Text>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.subtitle}>Today's Steps</Text>
