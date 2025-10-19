@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -6,13 +6,52 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const articles = [
-    { id: "1", title: "Healthy Eating", desc: "Tips for balanced nutrition." },
-    { id: "2", title: "Exercise Daily", desc: "Stay active to boost your health." },
-    { id: "3", title: "Mental Wellness", desc: "Meditation and stress relief tips." },
-    { id: "4", title: "Heart Care", desc: "Monitor and maintain heart health." },
-    { id: "5", title: "Sleep Tips", desc: "Improve your sleep quality." },
-    { id: "6", title: "Hydration", desc: "Importance of drinking enough water." },
+    {
+      id: "1",
+      title: "Healthy Eating",
+      desc: "Tips for balanced nutrition.",
+      url: "https://www.healthline.com/nutrition/healthy-eating-tips",
+    },
+    {
+      id: "2",
+      title: "Exercise Daily",
+      desc: "Stay active to boost your health.",
+      url: "https://www.cdc.gov/physical-activity-basics/guidelines/index.html",
+    },
+    {
+      id: "3",
+      title: "Mental Wellness",
+      desc: "Meditation and stress relief tips.",
+      url: "https://www.healthline.com/health/mental-health/self-care-tips",
+    },
+    {
+      id: "4",
+      title: "Heart Care",
+      desc: "Monitor and maintain heart health.",
+      url: "https://www.heart.org/en/healthy-living",
+    },
+    {
+      id: "5",
+      title: "Sleep Tips",
+      desc: "Improve your sleep quality.",
+      url: "https://www.sleepfoundation.org/sleep-hygiene/healthy-sleep-tips",
+    },
+    {
+      id: "6",
+      title: "Hydration",
+      desc: "Importance of drinking enough water.",
+      url: "https://www.health.harvard.edu/staying-healthy/how-much-water-should-you-drink",
+    },
   ];
+
+  const openLink = async (url) => {
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      alert("Nuk mund të hapet ky link.");
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -62,7 +101,11 @@ export default function HomeScreen() {
       <Text style={styles.sectionTitle}>Health Articles</Text>
       <View style={styles.articleContainer}>
         {articles.map((a) => (
-          <TouchableOpacity key={a.id} style={styles.articleCard}>
+          <TouchableOpacity
+            key={a.id}
+            style={styles.articleCard}
+            onPress={() => openLink(a.url)}
+          >
             <Text style={styles.articleTitle}>{a.title}</Text>
             <Text style={styles.articleDesc}>{a.desc}</Text>
           </TouchableOpacity>
@@ -74,9 +117,24 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 60, backgroundColor: "#E3F2FD" },
-  title: { fontSize: 28, fontWeight: "bold", color: "#007ACC", marginBottom: 5, textAlign: "center" },
-  subtitle: { fontSize: 16, color: "#555", marginBottom: 25, textAlign: "center" },
-  cardContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#007ACC",
+    marginBottom: 5,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#555",
+    marginBottom: 25,
+    textAlign: "center",
+  },
+  cardContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
   card: {
     backgroundColor: "#fff",
     borderRadius: 15,
@@ -90,9 +148,22 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  cardTitle: { fontSize: 18, fontWeight: "bold", marginTop: 10, color: "#333", textAlign: "center" },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 10,
+    color: "#333",
+    textAlign: "center",
+  },
   cardDesc: { fontSize: 12, textAlign: "center", color: "#666", marginTop: 4 },
-  sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#007ACC", marginTop: 30, marginBottom: 10, marginLeft: 15 },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#007ACC",
+    marginTop: 30,
+    marginBottom: 10,
+    marginLeft: 15,
+  },
   articleContainer: { paddingHorizontal: 15 },
   articleCard: {
     backgroundColor: "#fff",
