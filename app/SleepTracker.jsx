@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Appearance, Dimensions, PanResponder, Platform, Pressable, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from "@react-native-async-storage/async-storage"; 
 
 const pad2 = (n) => n < 10 ? `0${n}` : String(n);
 const formatYYYYMMDD = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -144,6 +145,11 @@ export default function SleepScreen() {
     return acc;
   }, [sessions]);
 
+  useEffect(() => {
+  unlockSleepBadge();
+}, [sleepByDay]);
+
+
   const weeks = useMemo(() => groupByWeeks(monthDays), [monthDays]);
   const weeklyAverages = useMemo(() => {
     return weeks.map((w) => {
@@ -270,6 +276,7 @@ export default function SleepScreen() {
     );
   };
 
+
   const totalMinutesForDateKey = (dateKey) => Math.round((sleepByDay[dateKey] ?? 0) * 60);
   const findWeekRangeFromOffset = (offset) => {
     const today = new Date();
@@ -352,6 +359,7 @@ export default function SleepScreen() {
     );
   };
 
+  // Pan responder
   const weekTranslateX = useMemo(() => new Animated.Value(0), []);
   const weekPanResponder = useMemo(() => {
     const threshold = Math.max(80, Math.floor(screenWidth / 4));
@@ -474,3 +482,19 @@ export default function SleepScreen() {
     </View>
   );
 }
+const unlockSleepBadge = async () => {
+  try {
+    const todayKey = formatYYYYMMDD(new Date());
+    const hoursSleptToday = sleepByDay[todayKey] ?? 0;
+
+    if (hoursSleptToday >= 7) {
+      const badgeDataRaw = await AsyncStorage.getItem("badges");
+      const badges = badgeDataRaw ? JSON.parse(badgeDataRaw) : {};
+      badges.sleepChampDate = todayKey; // save today's date as unlocked
+      await AsyncStorage.setItem("badges", JSON.stringify(badges));
+      console.log("Sleep badge unlocked!");
+    }
+  } catch (err) {
+    console.log("Error unlocking sleep badge:", err);
+  }
+};
