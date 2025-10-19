@@ -34,7 +34,7 @@ export default function BadgesScreen() {
           id: "4",
           title: "Sleep Champ 😴",
           desc: "Slept more than 7 hours",
-          unlocked: storedBadges.sleepChampDate === today,
+          unlocked: !!storedBadges.sleepChampDate,
         },
       ];
 
