@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
 import { useEffect, useState } from 'react';
-import { Alert, Dimensions, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import * as Progress from 'react-native-progress';
 
@@ -192,187 +192,110 @@ const chartData = {
 };
 
 
-  
-  const listData = [
-    { type: 'header', id: 'header' },
-    { type: 'progress', id: 'progress' },
-    { type: 'chart', id: 'chart' },
-    { type: 'buttons', id: 'buttons' },
-    ...drinkingLog.map(item => ({ type: 'log', ...item }))
-  ];
+// Header for the FlatList (scrollable along with content)
+const renderHeader = () => (
+  <View>
+    <TouchableOpacity
+      onPress={() => router.push("/(tabs)/home")}
+      style={styles.backButton}
+    >
+      <Text style={styles.backText}>←</Text>
+    </TouchableOpacity>
 
-  const renderItem = ({ item }) => {
-    switch (item.type) {
-      case 'header':
-        return (
-          <View>
-            <Text style={styles.dateText}>Today is {currentDate}</Text>
-            <Text style={styles.quote}>{quote}</Text>
-          </View>
-        );
-      
-      case 'progress':
-        return (
-          <View style={styles.progressContainer}>
-            <Progress.Circle
-              size={200}
-              progress={progress}
-              showsText={true}
-              color={progressColor}
-              unfilledColor={'#E0F7FA'}
-              borderWidth={3}
-              thickness={10}
-              textStyle={{ color: '#007ACC', fontWeight: 'bold', fontSize: 20 }}
-              formatText={() => `${Math.round(rawProgress * 100)}%`}
-              animated={true}
-            />
-            <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
-          </View>
-        );
-      
-      case 'chart':
-        return recentDays.length > 0 ? (
-          <View style={styles.chartContainer}>
-            <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
-            <BarChart
-              data={chartData}
-              width={Dimensions.get("window").width - 40}
-              height={200}
-              yAxisSuffix="%"
-              chartConfig={{
-                backgroundColor: "#E3F2FD",
-                backgroundGradientFrom: "#E3F2FD",
-                backgroundGradientTo: "#BBDEFB",
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
-                labelColor: () => "#007ACC",
-                propsForLabels: { fontSize: 10 },
-              }}
-              style={styles.chart}
-            />
-          </View>
-        ) : null;
-      
-      case 'buttons':
-        return (
-          <View style={{ width: '100%', paddingHorizontal: 10 }}>
-            <View style={styles.buttonRow}>
-              {[200, 300, 400, 500].map(amount => (
-                <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
-                  <Text style={styles.addButtonText}>+{amount} ml</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        );
-      
-      case 'log':
-        return (
-          <View style={styles.logItem}>
-            <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
-            <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      
-      default:
-        return null;
-    }
-  };
+    <Text style={styles.dateText}>Today is {currentDate}</Text>
+    <Text style={styles.quote}>{quote}</Text>
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
-      <TouchableOpacity
-        onPress={() => router.push("/(tabs)/home")}
-        style={styles.backButton}
-      >
-        <Text style={styles.backText}>←</Text>
-      </TouchableOpacity>
+    <View style={styles.progressContainer}>
+      <Progress.Circle
+        size={200}
+        progress={progress}
+        showsText={true}
+        color={progressColor}
+        unfilledColor={'#E0F7FA'}
+        borderWidth={3}
+        thickness={10}
+        textStyle={{ color: '#007ACC', fontWeight: 'bold', fontSize: 20 }}
+        formatText={() => `${Math.round(rawProgress * 100)}%`}
+        animated={true}
+      />
+      <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
+    </View>
 
-      <Text style={styles.dateText}>Today is {currentDate}</Text>
-      <Text style={styles.quote}>{quote}</Text>
-
-      <View style={styles.progressContainer}>
-        <Progress.Circle
-          size={200}
-          progress={progress}
-          showsText={true}
-          color={progressColor}
-          unfilledColor={'#E0F7FA'}
-          borderWidth={3}
-          thickness={10}
-          textStyle={{ color: '#007ACC', fontWeight: 'bold', fontSize: 20 }}
-          formatText={() => `${Math.round(rawProgress * 100)}%`}
-          animated={true}
+    {recentDays.length > 0 && (
+      <View style={styles.chartContainer}>
+        <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
+        <BarChart
+          data={chartData}
+          width={Dimensions.get("window").width - 40}
+          height={200}
+          yAxisSuffix="%"
+          chartConfig={{
+            backgroundColor: "#E3F2FD",
+            backgroundGradientFrom: "#E3F2FD",
+            backgroundGradientTo: "#BBDEFB",
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
+            labelColor: () => "#007ACC",
+            propsForLabels: { 
+              fontSize: 8, 
+              textAlign: 'center',
+              numberOfLines: 2,
+              lineHeight: 10
+            },
+          }}
+          style={styles.chart}
         />
-        <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
       </View>
+    )}
 
-      {recentDays.length > 0 && (
-        <View style={styles.chartContainer}>
-          <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
-          <BarChart
-            data={chartData}
-            width={Dimensions.get("window").width - 40}
-            height={200}
-            yAxisSuffix="%"
-            chartConfig={{
-              backgroundColor: "#E3F2FD",
-              backgroundGradientFrom: "#E3F2FD",
-              backgroundGradientTo: "#BBDEFB",
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
-              labelColor: () => "#007ACC",
-              propsForLabels: { 
-                fontSize: 8, 
-                textAlign: 'center',
-                numberOfLines: 2,
-                lineHeight: 10
-              },
-            }}
-            style={styles.chart}
-          />
-        </View>
-      )}
-
-      <View style={{ width: '100%', paddingHorizontal: 10 }}>
-        <View style={styles.buttonRow}>
-          {[200, 300, 400, 500].map(amount => (
-            <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
-              <Text style={styles.addButtonText}>+{amount} ml</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {drinkingLog.map(item => (
-        <View key={item.id} style={styles.logItem}>
-          <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
-          <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
-            <Text style={styles.deleteButtonText}>Delete</Text>
+    <View style={{ width: '100%', paddingHorizontal: 10 }}>
+      <View style={styles.buttonRow}>
+        {[200, 300, 400, 500].map(amount => (
+          <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
+            <Text style={styles.addButtonText}>+{amount} ml</Text>
           </TouchableOpacity>
-        </View>
-      ))}
-    </ScrollView>
-  );
+        ))}
+      </View>
+    </View>
+  </View>
+);
+
+// Render a single log item
+const renderLogItem = ({ item }) => (
+  <View style={styles.logItem}>
+    <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
+    <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
+      <Text style={styles.deleteButtonText}>Delete</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+return (
+  <SafeAreaView style={styles.safeArea}>
+    <FlatList
+      data={drinkingLog}
+      renderItem={renderLogItem}
+      keyExtractor={item => item.id}
+      ListHeaderComponent={renderHeader}
+      contentContainerStyle={styles.scrollContainer}
+      showsVerticalScrollIndicator={false}
+    />
+  </SafeAreaView>
+);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#E3F2FD',
-  },
+  safeArea: { flex: 1, backgroundColor: '#E3F2FD' },
   scrollContainer: {
     flexGrow: 1,
-    alignItems: 'center',
+    alignItems: 'stretch',
     paddingTop: 20,
     paddingBottom: 40,
     backgroundColor: '#E3F2FD',
     paddingHorizontal: 10,
     minHeight: '100%',
   },
-  dateText: { fontSize: 18, color: '#007ACC', fontWeight: '500', marginBottom: 8 },
+  dateText: { fontSize: 18, color: '#007ACC', fontWeight: '500', marginBottom: 8, textAlign: 'center' },
   quote: { fontSize: 16, color: '#444', fontStyle: 'italic', marginBottom: 15, textAlign: 'center', paddingHorizontal: 20 },
   progressContainer: { alignItems: 'center', justifyContent: 'center', marginBottom: 25 },
   subText: { fontSize: 16, color: '#555', marginTop: 10 },
