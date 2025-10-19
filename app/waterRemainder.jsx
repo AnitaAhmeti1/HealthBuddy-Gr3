@@ -192,89 +192,124 @@ const chartData = {
 };
 
 
+  // Create a combined data array for the FlatList
+  const listData = [
+    { type: 'header', id: 'header' },
+    { type: 'progress', id: 'progress' },
+    { type: 'chart', id: 'chart' },
+    { type: 'buttons', id: 'buttons' },
+    ...drinkingLog.map(item => ({ type: 'log', ...item }))
+  ];
+
+  const renderItem = ({ item }) => {
+    switch (item.type) {
+      case 'header':
+        return (
+          <View>
+            <Text style={styles.dateText}>Today is {currentDate}</Text>
+            <Text style={styles.quote}>{quote}</Text>
+          </View>
+        );
+      
+      case 'progress':
+        return (
+          <View style={styles.progressContainer}>
+            <Progress.Circle
+              size={200}
+              progress={progress}
+              showsText={true}
+              color={progressColor}
+              unfilledColor={'#E0F7FA'}
+              borderWidth={3}
+              thickness={10}
+              textStyle={{ color: '#007ACC', fontWeight: 'bold', fontSize: 20 }}
+              formatText={() => `${Math.round(rawProgress * 100)}%`}
+              animated={true}
+            />
+            <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
+          </View>
+        );
+      
+      case 'chart':
+        return recentDays.length > 0 ? (
+          <View style={styles.chartContainer}>
+            <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
+            <BarChart
+              data={chartData}
+              width={Dimensions.get("window").width - 40}
+              height={200}
+              yAxisSuffix="%"
+              chartConfig={{
+                backgroundColor: "#E3F2FD",
+                backgroundGradientFrom: "#E3F2FD",
+                backgroundGradientTo: "#BBDEFB",
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
+                labelColor: () => "#007ACC",
+                propsForLabels: { fontSize: 10 },
+              }}
+              style={styles.chart}
+            />
+          </View>
+        ) : null;
+      
+      case 'buttons':
+        return (
+          <View style={{ width: '100%', paddingHorizontal: 10 }}>
+            <View style={styles.buttonRow}>
+              {[200, 300, 400, 500].map(amount => (
+                <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
+                  <Text style={styles.addButtonText}>+{amount} ml</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+      
+      case 'log':
+        return (
+          <View style={styles.logItem}>
+            <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
+            <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <View style={styles.container}>
       <TouchableOpacity onPress={() => router.push("/(tabs)/home")} style={styles.backButton}>
         <Text style={styles.backText}>←</Text>
       </TouchableOpacity>
-
-      <Text style={styles.dateText}>Today is {currentDate}</Text>
-      <Text style={styles.quote}>{quote}</Text>
-
-      <View style={styles.progressContainer}>
-        <Progress.Circle
-          size={200}
-          progress={progress}
-          showsText={true}
-          color={progressColor}
-          unfilledColor={'#E0F7FA'}
-          borderWidth={3}
-          thickness={10}
-          textStyle={{ color: '#007ACC', fontWeight: 'bold', fontSize: 20 }}
-          formatText={() => `${Math.round(rawProgress * 100)}%`}
-          animated={true}
-        />
-        <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
-      </View>
-
-      {recentDays.length > 0 && (
-        <View style={styles.chartContainer}>
-          <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
-          <BarChart
-            data={chartData}
-            width={Dimensions.get("window").width - 40}
-            height={200}
-            yAxisSuffix="%"
-            chartConfig={{
-              backgroundColor: "#E3F2FD",
-              backgroundGradientFrom: "#E3F2FD",
-              backgroundGradientTo: "#BBDEFB",
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
-              labelColor: () => "#007ACC",
-              propsForLabels: { fontSize: 10 },
-            }}
-            style={styles.chart}
-          />
-        </View>
-      )}
-
-      <View style={{ width: '100%', paddingHorizontal: 10 }}>
-  <View style={styles.buttonRow}>
-    {[200, 300, 400, 500].map(amount => (
-      <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
-        <Text style={styles.addButtonText}>+{amount} ml</Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-
-  <FlatList
-    style={{ flex: 1 }}
-    contentContainerStyle={{ paddingBottom: 20 }}
-    data={drinkingLog}
-    keyExtractor={item => item.id}
-    renderItem={({ item }) => (
-      <View style={styles.logItem}>
-        <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
-        <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-  />
-</View>
-        
-    </ScrollView>
+      
+      <FlatList
+        data={listData}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#E3F2FD',
+  },
   scrollContainer: {
     flexGrow: 1,
     alignItems: 'center',
     paddingTop: 60,
     paddingBottom: 40,
     backgroundColor: '#E3F2FD',
+    paddingHorizontal: 10,
   },
   dateText: { fontSize: 18, color: '#007ACC', fontWeight: '500', marginBottom: 8 },
   quote: { fontSize: 16, color: '#444', fontStyle: 'italic', marginBottom: 15, textAlign: 'center', paddingHorizontal: 20 },
@@ -297,6 +332,11 @@ addButton: {
   borderRadius: 20,
   alignItems: 'center',
 },
+addButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 16,
+},
 logItem: {
   backgroundColor: '#fff',
   paddingVertical: 15,
@@ -312,7 +352,7 @@ logItem: {
   logText: { fontSize: 17, color: '#333', flex: 1, flexWrap: 'wrap' },
   deleteButton: { backgroundColor: '#FF6347', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8 },
   deleteButtonText: { color: '#fff', fontWeight: 'bold' },
-  backButton: { position: "absolute", top: 20, left: 20, borderRadius: 12, padding: 8, zIndex: 10 },
-  backText: { fontSize: 24, color: "#0026ffff", fontWeight: "bold" },
+  backButton: { marginBottom: 12,top:12, left:10, padding: 10, alignSelf: "flex-start" },
+  backText: { fontSize: 24, color: "#007ACC", fontWeight: "bold" },
   
 });
