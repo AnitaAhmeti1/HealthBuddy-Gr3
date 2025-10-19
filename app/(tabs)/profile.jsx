@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -16,10 +13,10 @@ export default function ProfileScreen() {
   });
 
   const [quickStats, setQuickStats] = useState([
-    { icon: '💧', label: 'Water Today', value: '0L' },
-    { icon: '👣', label: 'Steps', value: '0' },
-    { icon: '❤️', label: 'Heart Rate', value: '-- bpm' },
-    { icon: '😴', label: 'Sleep', value: '0h' },
+    { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: '0L' },
+    { icon: 'walk-outline', color: '#32CD32', label: 'Steps', value: '0' },
+    { icon: 'heart-outline', color: '#FF6347', label: 'Heart Rate', value: '-- bpm' },
+    { icon: 'bed-outline', color: '#6A5ACD', label: 'Sleep', value: '0h' },
   ]);
 
   useEffect(() => {
@@ -86,19 +83,19 @@ export default function ProfileScreen() {
       }
 
       setQuickStats([
-        { icon: '💧', label: 'Water Today', value: `${waterLiters}L` },
-        { icon: '👣', label: 'Steps', value: steps.toLocaleString() },
-        { icon: '❤️', label: 'Heart Rate', value: heartRate },
-        { icon: '😴', label: 'Sleep', value: sleepHours },
+        { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: `${waterLiters}L` },
+        { icon: 'walk-outline', color: '#32CD32', label: 'Steps', value: steps.toLocaleString() },
+        { icon: 'heart-outline', color: '#FF6347', label: 'Heart Rate', value: heartRate },
+        { icon: 'bed-outline', color: '#6A5ACD', label: 'Sleep', value: sleepHours },
       ]);
 
     } catch (error) {
       console.log('Error loading today stats:', error);
       setQuickStats([
-        { icon: '💧', label: 'Water Today', value: '0L' },
-        { icon: '👣', label: 'Steps', value: '0' },
-        { icon: '❤️', label: 'Heart Rate', value: '-- bpm' },
-        { icon: '😴', label: 'Sleep', value: '0h' },
+        { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: '0L' },
+        { icon: 'walk-outline', color: '#32CD32', label: 'Steps', value: '0' },
+        { icon: 'heart-outline', color: '#FF6347', label: 'Heart Rate', value: '-- bpm' },
+        { icon: 'bed-outline', color: '#6A5ACD', label: 'Sleep', value: '0h' },
       ]);
     }
   };
@@ -124,12 +121,11 @@ export default function ProfileScreen() {
     );
   };
 
-useFocusEffect(
-  useCallback(() => {
-    loadTodayStats();
-  }, [])
-);
-
+  useFocusEffect(
+    useCallback(() => {
+      loadTodayStats();
+    }, [])
+  );
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -155,7 +151,7 @@ useFocusEffect(
         <View style={styles.statsContainer}>
           {quickStats.map((stat, index) => (
             <View key={index} style={styles.statItem}>
-              <Text style={styles.statIcon}>{stat.icon}</Text>
+              <Ionicons name={stat.icon} size={32} color={stat.color} />
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
@@ -303,15 +299,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  statIcon: {
-    fontSize: 24,
-    marginBottom: 5,
-  },
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2,
+    marginTop: 5,
   },
   statLabel: {
     fontSize: 12,
