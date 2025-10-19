@@ -370,13 +370,13 @@ export default function SleepScreen() {
         setSelectedWeekIndex(null);
         if (g.dx <= -threshold) {
           Animated.timing(weekTranslateX, { toValue: -screenWidth, duration: 150, useNativeDriver: true }).start(() => {
-            setWeekOffset((o) => o - 1);
+            setWeekOffset((o) => o + 1);
             weekTranslateX.setValue(screenWidth);
             Animated.timing(weekTranslateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
           });
         } else if (g.dx >= threshold) {
           Animated.timing(weekTranslateX, { toValue: screenWidth, duration: 150, useNativeDriver: true }).start(() => {
-            setWeekOffset((o) => o + 1);
+            setWeekOffset((o) => o - 1);
             weekTranslateX.setValue(-screenWidth);
             Animated.timing(weekTranslateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
           });
