@@ -10,4 +10,10 @@ Perdoruesit mund te regjistrohen dhe kycen(register/login), te ruajne te dhenat 
 HealthBoddy eshte nje asistent personal shendetesor qe ndihmon ne krijimin e zakoneve te shendetshme, motivon per rutine ditore te mire dhe
 e ben kujdesin per shendetin me te lehte dhe me te kendshem.
 
-
+Anetaret e grupit:
+Anita Ahmeti
+Arita Xhela
+Arxhente Kadriu
+Bahrie Veseli
+Erion Mehmeti
+Rona Maxhuni
