@@ -32,12 +32,9 @@ export default function ProfileScreen() {
       const waterLiters = (waterML / 1000).toFixed(1);
       
       let steps = 0;
-      const stepsData = await AsyncStorage.getItem('stepsData');
+      const stepsData = await AsyncStorage.getItem('steps');
       if (stepsData) {
-        const parsed = JSON.parse(stepsData);
-        steps = parsed.steps || 0;
-      } else {
-        steps = 0;
+        steps = parseInt(stepsData) || 0;
       }
       
       const bpRecords = await AsyncStorage.getItem('bloodPressureRecords');
@@ -52,34 +49,43 @@ export default function ProfileScreen() {
       
       const sleepSessions = await AsyncStorage.getItem('sleep.sessions.v1');
       let sleepHours = '0h';
+      
       if (sleepSessions) {
         const sessions = JSON.parse(sleepSessions);
+        
+        let totalSleepMinutes = 0;
         const todaySessions = sessions.filter(session => {
           const sessionDate = new Date(session.startISO).toISOString().split('T')[0];
           return sessionDate === today;
         });
         
         if (todaySessions.length > 0) {
-          let totalSleepMinutes = 0;
           todaySessions.forEach(session => {
             const start = new Date(session.startISO);
             const end = new Date(session.endISO);
             const duration = (end - start) / (1000 * 60);
             totalSleepMinutes += duration;
           });
-          
-          const sleepHoursValue = (totalSleepMinutes / 60).toFixed(1);
-          sleepHours = `${sleepHoursValue}h`;
         } else {
           if (sessions.length > 0) {
             const lastSession = sessions[sessions.length - 1];
-            const start = new Date(lastSession.startISO);
-            const end = new Date(lastSession.endISO);
-            const duration = (end - start) / (1000 * 60);
-            const sleepHoursValue = (duration / 60).toFixed(1);
-            sleepHours = `${sleepHoursValue}h`;
+            const lastSessionDate = new Date(lastSession.startISO).toISOString().split('T')[0];
+            
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            if (lastSessionDate === yesterdayStr || lastSessionDate === today) {
+              const start = new Date(lastSession.startISO);
+              const end = new Date(lastSession.endISO);
+              const duration = (end - start) / (1000 * 60);
+              totalSleepMinutes = duration;
+            }
           }
         }
+        
+        const sleepHoursValue = (totalSleepMinutes / 60).toFixed(1);
+        sleepHours = `${sleepHoursValue}h`;
       }
 
       setQuickStats([
