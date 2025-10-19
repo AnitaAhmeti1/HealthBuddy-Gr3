@@ -24,7 +24,7 @@ export default function LoginScreen() {
          style={styles.logo}
         />
         <Text style={styles.title}>Welcome Back!</Text>
-        <Text style={styles.subtitle}>Login to continue to HealthBuddy</Text>
+        <Text style={styles.subtitle}>Login to continue</Text>
 
         <TextInput
           style={styles.input}

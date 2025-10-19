@@ -51,7 +51,7 @@ export default function RegisterScreen() {
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/")}>
+        <TouchableOpacity onPress={() => router.replace("/login")}>
           <Text style={styles.link}>Back to Login</Text>
         </TouchableOpacity>
       </View>
