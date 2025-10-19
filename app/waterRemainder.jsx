@@ -143,7 +143,7 @@ useEffect(() => {
     }
   };
 
-  // Reset-i i ditës
+
   const resetDailyIntake = async (previousDate) => {
     try {
       if (previousDate) {
@@ -181,9 +181,8 @@ const chartData = {
   labels: recentDays.map(item => {
     const dateObj = new Date(item.date);
     const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-    const date = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    return `${day}\n${date}\n${time}`; 
+    return `${day} ${time}`;
   }),
   datasets: [
     {
@@ -191,6 +190,7 @@ const chartData = {
     },
   ],
 };
+
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
