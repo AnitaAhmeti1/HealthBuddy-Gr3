@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function BadgesScreen() {
   const [badges, setBadges] = useState([]);
@@ -14,26 +15,34 @@ export default function BadgesScreen() {
       const data = [
         {
           id: "1",
-          title: "Hydration Hero 💧",
+          title: "Hydration Hero",
           desc: "Drank 3500ml in one day",
+          icon: "water-outline",
+          color: "#00BFFF",
           unlocked: storedBadges.hydrationHeroDate === today,
         },
         {
           id: "2",
-          title: "Step Master 👣",
+          title: "Step Master",
           desc: "Reached 8000 steps in one day",
+          icon: "walk-outline",
+          color: "#32CD32",
           unlocked: storedBadges.stepMasterDate === today,
         },
         {
           id: "3",
-          title: "Healthy Heart 🫀",
+          title: "Healthy Heart",
           desc: "Kept blood pressure normal",
+          icon: "heart-outline",
+          color: "#FF6347",
           unlocked: storedBadges.healthyHeartDate === today,
         },
         {
           id: "4",
-          title: "Sleep Champ 😴",
+          title: "Sleep Champ",
           desc: "Slept more than 7 hours",
+          icon: "bed-outline",
+          color: "#6A5ACD",
           unlocked: !!storedBadges.sleepChampDate,
         },
       ];
@@ -57,6 +66,7 @@ export default function BadgesScreen() {
               item.unlocked ? styles.unlocked : styles.locked,
             ]}
           >
+            <Ionicons name={item.icon} size={40} color={item.color} />
             <Text style={styles.badgeTitle}>{item.title}</Text>
             <Text style={styles.badgeDesc}>{item.desc}</Text>
             <Text style={styles.badgeStatus}>
@@ -99,6 +109,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
+    marginTop: 10,
   },
   badgeDesc: {
     fontSize: 14,
