@@ -16,7 +16,7 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>HealthBuddy 🩺</Text>
+      <Text style={styles.title}>HealthBuddy</Text>
       <Text style={styles.subtitle}>Welcome back! Choose a section below.</Text>
 
       {/* Kartat kryesore */}

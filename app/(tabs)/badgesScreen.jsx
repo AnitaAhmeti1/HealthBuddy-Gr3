@@ -46,7 +46,7 @@ export default function BadgesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🏅 Your Achievements</Text>
+      <Text style={styles.title}>Your Achievements</Text>
       <FlatList
         data={badges}
         keyExtractor={(item) => item.id}

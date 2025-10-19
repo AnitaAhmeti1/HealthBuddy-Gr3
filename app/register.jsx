@@ -17,7 +17,7 @@ export default function RegisterScreen() {
     <LinearGradient colors={["#a1c4fd", "#c2e9fb"]} style={styles.container}>
       <View style={styles.card}>
         <Image
-          source={require("../assets/icon.png")}
+          source={require("../assets/Logo.png")}
           style={styles.logo}
         />
         <Text style={styles.title}>Create new account</Text>
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignItems: "center",
   },
-  logo: { width: 70, height: 70, marginBottom: 15 },
+  logo: { width: 120, height: 120, marginBottom: 10},
   title: { fontSize: 24, fontWeight: "bold", color: "#007AFF" },
   subtitle: { fontSize: 14, color: "#666", marginBottom: 25 },
   input: {
