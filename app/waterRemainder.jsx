@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
 import { useEffect, useState } from 'react';
-import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
+import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import * as Progress from 'react-native-progress';
 
@@ -271,7 +271,7 @@ const renderLogItem = ({ item }) => (
 );
 
 return (
-  <SafeAreaView style={styles.safeArea}>
+  
     <FlatList
       data={drinkingLog}
       renderItem={renderLogItem}
@@ -280,12 +280,12 @@ return (
       contentContainerStyle={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
     />
-  </SafeAreaView>
+  
 );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#E3F2FD' },
+  
   scrollContainer: {
     flexGrow: 1,
     alignItems: 'stretch',
