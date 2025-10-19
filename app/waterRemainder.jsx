@@ -192,7 +192,7 @@ const chartData = {
 };
 
 
-// Header for the FlatList (scrollable along with content)
+
 const renderHeader = () => (
   <View>
     <TouchableOpacity
@@ -260,7 +260,7 @@ const renderHeader = () => (
   </View>
 );
 
-// Render a single log item
+
 const renderLogItem = ({ item }) => (
   <View style={styles.logItem}>
     <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
