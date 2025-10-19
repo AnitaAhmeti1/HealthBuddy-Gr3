@@ -117,7 +117,7 @@ export default function ProfileScreen() {
           text: 'Logout', 
           onPress: () => {
             Alert.alert('Logged Out', 'You have been logged out.');
-            router.push('/');
+            router.replace('/login');
           }
         }
       ]

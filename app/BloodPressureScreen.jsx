@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  Modal,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
@@ -21,6 +22,7 @@ const BloodPressureScreen = () => {
   const [pulse, setPulse] = useState(30);
   const [records, setRecords] = useState([]);
   const [status, setStatus] = useState("Normal");
+  const [resetModalVisible, setResetModalVisible] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -61,7 +63,6 @@ const BloodPressureScreen = () => {
     setRecords(updatedRecords);
     await saveData(updatedRecords);
 
-    // Kontrollo arritjet ditore
     checkDailyBadge(newStatus, today);
   };
 
@@ -69,7 +70,6 @@ const BloodPressureScreen = () => {
     try {
       const badges = JSON.parse((await AsyncStorage.getItem("badges")) || "{}");
 
-      // Badge për presion të shëndetshëm sot
       if (
         status === "Normal" &&
         (!badges.healthyHeartDate || badges.healthyHeartDate !== today)
@@ -83,6 +83,26 @@ const BloodPressureScreen = () => {
     } catch (e) {
       console.log("Error saving badges:", e);
     }
+  };
+
+  const handleResetData = () => {
+    setResetModalVisible(true);
+  };
+
+  const confirmReset = async () => {
+    try {
+      setRecords([]);
+      await AsyncStorage.removeItem("bloodPressureRecords");
+      setResetModalVisible(false);
+      Alert.alert("Success", "All data has been reset!");
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "Failed to reset data");
+    }
+  };
+
+  const cancelReset = () => {
+    setResetModalVisible(false);
   };
 
   const chartData = {
@@ -145,7 +165,8 @@ const BloodPressureScreen = () => {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleAdd}>
+  
+      <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
         <Text style={styles.buttonText}>Add</Text>
       </TouchableOpacity>
 
@@ -175,22 +196,54 @@ const BloodPressureScreen = () => {
       </View>
 
       {records.length > 0 && (
-        <BarChart
-          data={chartData}
-          width={screenWidth - 20}
-          height={220}
-          fromZero
-          chartConfig={{
-            backgroundColor: "#fff",
-            backgroundGradientFrom: "#f6f6f6",
-            backgroundGradientTo: "#f6f6f6",
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            labelColor: () => "#666",
-          }}
-          style={{ marginVertical: 8, borderRadius: 12 }}
-        />
+        <>
+          <BarChart
+            data={chartData}
+            width={screenWidth - 20}
+            height={220}
+            fromZero
+            chartConfig={{
+              backgroundColor: "#fff",
+              backgroundGradientFrom: "#f6f6f6",
+              backgroundGradientTo: "#f6f6f6",
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              labelColor: () => "#666",
+            }}
+            style={{ marginVertical: 8, borderRadius: 12 }}
+          />
+          
+        
+          <TouchableOpacity style={styles.smallResetButton} onPress={handleResetData}>
+            <Text style={styles.smallResetButtonText}>Reset Data</Text>
+          </TouchableOpacity>
+        </>
       )}
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={resetModalVisible}
+        onRequestClose={cancelReset}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reset Data</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to delete all blood pressure records? 
+              This action cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={cancelReset}>
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalButton, styles.confirmButton]} onPress={confirmReset}>
+                <Text style={styles.modalButtonText}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -208,13 +261,87 @@ const styles = StyleSheet.create({
   value: { fontSize: 22, fontWeight: "bold", marginVertical: 4 },
   selector: { flexDirection: "row", gap: 10 },
   arrow: { fontSize: 22, paddingHorizontal: 10, color: "#ff7f00" },
-  button: { backgroundColor: "#ff7f00", borderRadius: 10, padding: 12, alignItems: "center", marginVertical: 10 },
+  addButton: {
+    backgroundColor: "#ff7f00",
+    borderRadius: 10,
+    padding: 12,
+    alignItems: "center",
+    marginVertical: 10,
+  },
+ 
+  smallResetButton: {
+    backgroundColor: "#ff4444",
+    borderRadius: 8,
+    padding: 8,
+    alignItems: "center",
+    marginVertical: 10,
+    alignSelf: "center",
+    width: "40%",
+  },
+  smallResetButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
   buttonText: { color: "#fff", fontWeight: "bold" },
-  resultCard: { backgroundColor: "#f9f9f9", borderRadius: 12, padding: 16, alignItems: "center", marginTop: 10 },
+  resultCard: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
   resultText: { fontSize: 24, fontWeight: "bold" },
   status: { marginTop: 6, fontWeight: "bold", fontSize: 16 },
   normal: { color: "green" },
   high: { color: "red" },
   low: { color: "blue" },
   desc: { marginTop: 8, textAlign: "center", color: "#555" },
+
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#555",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  modalButton: {
+    borderRadius: 8,
+    padding: 12,
+    flex: 1,
+    marginHorizontal: 5,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#ccc",
+  },
+  confirmButton: {
+    backgroundColor: "#ff4444",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
 });
