@@ -36,7 +36,7 @@ export default function WaterTracker() {
   if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
   else if (rawProgress > 1.5) progressColor = '#FF4500';
 
-  // Caktimi i quote bazuar në progres
+
   useEffect(() => {
     if (rawProgress <= 1) {
       setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
@@ -45,8 +45,7 @@ export default function WaterTracker() {
     }
   }, [waterIntake]);
 
-  // Ngarkimi i të dhënave nga AsyncStorage
-  // Ngarkimi i të dhënave nga AsyncStorage (me kontroll pas orës 09:20)
+  
 useEffect(() => {
   const loadData = async () => {
     try {
@@ -64,9 +63,9 @@ useEffect(() => {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
-      // ✅ Kontrollo nëse është ditë e re DHE ora është pas 09:20
+      
       if ((!savedDate || savedDate !== currentDate) && 
-          (currentHour > 22 || (currentHour === 22 && currentMinute >= 46))) {
+          (currentHour > 0 || (currentHour === 0 && currentMinute >= 0))) {
         await resetDailyIntake(savedDate || currentDate);
       }
     } catch (error) {
@@ -76,12 +75,12 @@ useEffect(() => {
   loadData();
 }, []);
 
-  // Planifikimi i reset-it të ditës së re
+  
   useEffect(() => {
     const scheduleReset = () => {
       const now = new Date();
       const nextReset = new Date();
-      nextReset.setHours(22, 46, 0, 0);
+      nextReset.setHours(0, 0, 0, 0);
       if (nextReset < now) nextReset.setDate(nextReset.getDate() + 1);
 
       setTimeout(async () => {
@@ -94,7 +93,7 @@ useEffect(() => {
     scheduleReset();
   }, []);
 
-  // Ruajtja e të dhënave në AsyncStorage
+ 
   useEffect(() => {
     const saveData = async () => {
       try {
@@ -109,7 +108,7 @@ useEffect(() => {
     saveData();
   }, [waterIntake, drinkingLog, dailyHistory]);
 
-  // Funksionet për shtimin dhe fshirjen e ujit
+  
   const addWater = (amount) => {
     const currentTime = new Date().toLocaleTimeString();
     const newIntake = waterIntake + amount;
@@ -125,7 +124,7 @@ useEffect(() => {
     setWaterIntake(waterIntake - amount);
   };
 
-  // Kontrolli i badge "Hydration Hero"
+ 
   const checkHydrationBadge = async (currentIntake) => {
     if (currentIntake >= goal) {
       try {
@@ -150,7 +149,7 @@ useEffect(() => {
       if (previousDate) {
         const dailyPercent = Math.round((waterIntake / goal) * 100);
 
-       const timestamp = new Date().toISOString(); // ruan datën + orën e plotë
+       const timestamp = new Date().toISOString();
       const newHistory = [...dailyHistory, { date: timestamp, percent: dailyPercent }];
 
         const trimmedHistory = newHistory.slice(-30);
@@ -174,9 +173,7 @@ useEffect(() => {
     }
   };
 
-  // Përgatitja e të dhënave për grafik
-// Përgatitja e të dhënave për grafik
-// Përgatitja e të dhënave për grafik
+
 const recentDays = dailyHistory.slice(-7);
 const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -186,7 +183,7 @@ const chartData = {
     const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
     const date = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    return `${day}\n${date}\n${time}`; // 3 rreshta
+    return `${day}\n${date}\n${time}`; 
   }),
   datasets: [
     {
@@ -288,14 +285,14 @@ const styles = StyleSheet.create({
   chart: { borderRadius: 10 },
   buttonRow: {
   flexDirection: 'row',
-  justifyContent: 'space-between', // për të mbushur gjithë hapësirën
+  justifyContent: 'space-between', 
   width: '100%',
   marginVertical: 10,
 },
 addButton: {
   backgroundColor: '#00BFFF',
   paddingVertical: 12,
-  flex: 1,              // bën që butonat të zgjerojnë në mënyrë të barabartë
+  flex: 1,              
   marginHorizontal: 4,
   borderRadius: 20,
   alignItems: 'center',
@@ -306,7 +303,7 @@ logItem: {
   paddingHorizontal: 15,
   borderRadius: 10,
   marginVertical: 5,
-  width: '100%',         // zgjerohet e gjithë gjerësia
+  width: '100%',         
   flexDirection: 'row',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -315,7 +312,7 @@ logItem: {
   logText: { fontSize: 17, color: '#333', flex: 1, flexWrap: 'wrap' },
   deleteButton: { backgroundColor: '#FF6347', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8 },
   deleteButtonText: { color: '#fff', fontWeight: 'bold' },
-  backButton: { position: "absolute", top: 55, left: 20, borderRadius: 12, padding: 8, zIndex: 10 },
+  backButton: { position: "absolute", top: 20, left: 20, borderRadius: 12, padding: 8, zIndex: 10 },
   backText: { fontSize: 24, color: "#0026ffff", fontWeight: "bold" },
   
 });
