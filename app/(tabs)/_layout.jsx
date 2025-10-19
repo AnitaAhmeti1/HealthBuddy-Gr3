@@ -17,7 +17,7 @@ export default function NavLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => <NavIcon name="home" color={color} />,
@@ -25,10 +25,10 @@ export default function NavLayout() {
       />
 
       <Tabs.Screen
-        name="achievements"
+        name="badgesScreen"
         options={{
           title: "Achievements",
-          tabBarIcon: ({ color }) => <NavIcon name="star" color={color} />,
+          tabBarIcon: ({ color }) => <NavIcon name="award" color={color} />,
         }}
       />
 
