@@ -77,7 +77,7 @@ export default function BadgesScreen() {
               styles.badgeStatus,
               { color: item.unlocked ? "#32CD32" : "#FF6347" }
             ]}>
-              {item.unlocked ? "🎉 Unlocked Today!" : "🔒 Locked"}
+              {item.unlocked ? "Unlocked Today!" : "Locked"}
             </Text>
           </View>
         )}
