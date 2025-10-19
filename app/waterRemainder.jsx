@@ -192,7 +192,7 @@ const chartData = {
 };
 
 
-  // Create a combined data array for the FlatList
+  
   const listData = [
     { type: 'header', id: 'header' },
     { type: 'progress', id: 'progress' },
