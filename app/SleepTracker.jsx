@@ -285,6 +285,10 @@ export default function SleepScreen() {
     start.setDate(current.getDate() - current.getDay() + offset * 7);
     return Array.from({ length: 7 }, (_, i) => formatYYYYMMDD(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)));
   };
+  const visibleWeekDays = findWeekRangeFromOffset(weekOffset);
+  const firstDayOfVisibleWeek = parseISO(visibleWeekDays[0]);
+  const visibleMonth = firstDayOfVisibleWeek.getMonth();
+  const visibleYear = firstDayOfVisibleWeek.getFullYear();
 
   const StackedWeekChart = ({ labels, sleepByDay, width, height, panHandlers, onSelect, selectedIndex, animatedTranslateX }) => {
     const weekKeys = findWeekRangeFromOffset(weekOffset);
@@ -407,7 +411,7 @@ export default function SleepScreen() {
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Pressable onPress={() => changeMonth(-1)} style={{ padding: 8 }}><Text style={{ color: theme.tint, fontSize: 16 }}>{'<'} Prev</Text></Pressable>
-          <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>{formatMonthYear(year, monthIndex)}</Text>
+          <Text style={{ color: theme.text, fontSize: 16, fontWeight: '600' }}>{formatMonthYear(visibleYear, visibleMonth)}</Text>
           <Pressable onPress={() => changeMonth(1)} style={{ padding: 8 }}><Text style={{ color: theme.tint, fontSize: 16 }}>Next {'>'}</Text></Pressable>
         </View>
 
@@ -468,7 +472,7 @@ export default function SleepScreen() {
             <Text style={{ color: theme.icon, fontSize: 14, textAlign: 'center', paddingVertical: 20 }}>Log some sleep sessions to see schedule analysis and recommendations</Text>
           )}
         </View>
-
+         
         <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#E6EEF5', marginBottom: 100 }}>
           <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text, marginBottom: 10 }}>🌙 About Sleep</Text>
           <Text style={{ color: theme.icon, lineHeight: 22 }}>
