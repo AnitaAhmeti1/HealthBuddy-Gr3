@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import * as Progress from 'react-native-progress';
+import { auth } from '../firebase';
+
+
 
 export default function WaterTracker() {
   const router = useRouter(); 
@@ -11,6 +14,7 @@ export default function WaterTracker() {
   const [goal, setGoal] = useState(3500);
   const [drinkingLog, setDrinkingLog] = useState([]);
   const [dailyHistory, setDailyHistory] = useState([]);
+  const [uid, setUid] = useState(null);
   const [today, setToday] = useState(new Date().toISOString().split('T')[0]);
 
   const motivationalQuotes = [
@@ -36,6 +40,18 @@ export default function WaterTracker() {
   if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
   else if (rawProgress > 1.5) progressColor = '#FF4500';
 
+  useEffect(() => {
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    if (user) {
+      setUid(user.uid);
+    } else {
+      setUid(null);
+    }
+  });
+  return unsubscribe;
+}, []);
+
+
 
   useEffect(() => {
     if (rawProgress <= 1) {
@@ -47,33 +63,30 @@ export default function WaterTracker() {
 
   
 useEffect(() => {
+
   const loadData = async () => {
     try {
-      const savedWater = await AsyncStorage.getItem('waterIntake');
-      const savedLog = await AsyncStorage.getItem('drinkingLog');
-      const savedHistory = await AsyncStorage.getItem('dailyHistory');
-      const savedDate = await AsyncStorage.getItem('lastSavedDate');
+      const savedWater = await AsyncStorage.getItem(`waterIntake_${uid}`);
+      const savedLog = await AsyncStorage.getItem(`drinkingLog_${uid}`);
+      const savedHistory = await AsyncStorage.getItem(`dailyHistory_${uid}`);
+      const savedDate = await AsyncStorage.getItem(`lastSavedDate_${uid}`);
 
       if (savedWater !== null) setWaterIntake(JSON.parse(savedWater));
       if (savedLog !== null) setDrinkingLog(JSON.parse(savedLog));
       if (savedHistory !== null) setDailyHistory(JSON.parse(savedHistory));
 
       const currentDate = getToday();
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-
-      
-      if ((!savedDate || savedDate !== currentDate) && 
-          (currentHour > 0 || (currentHour === 0 && currentMinute >= 0))) {
+      if (savedDate !== currentDate) {
         await resetDailyIntake(savedDate || currentDate);
       }
     } catch (error) {
       console.log('Error loading data', error);
     }
   };
+
   loadData();
-}, []);
+}, [uid]); 
+
 
   
   useEffect(() => {
@@ -97,10 +110,10 @@ useEffect(() => {
   useEffect(() => {
     const saveData = async () => {
       try {
-        await AsyncStorage.setItem('waterIntake', JSON.stringify(waterIntake));
-        await AsyncStorage.setItem('drinkingLog', JSON.stringify(drinkingLog));
-        await AsyncStorage.setItem('dailyHistory', JSON.stringify(dailyHistory));
-        await AsyncStorage.setItem('lastSavedDate', getToday());
+        await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(waterIntake));
+        await AsyncStorage.setItem(`drinkingLog_${uid}`, JSON.stringify(drinkingLog));
+        await AsyncStorage.setItem(`dailyHistory_${uid}`, JSON.stringify(dailyHistory));
+        await AsyncStorage.setItem(`lastSavedDate_${uid}`, getToday());
       } catch (error) {
         console.log('Error saving data', error);
       }
@@ -109,14 +122,21 @@ useEffect(() => {
   }, [waterIntake, drinkingLog, dailyHistory]);
 
   
-  const addWater = (amount) => {
-    const currentTime = new Date().toLocaleTimeString();
-    const newIntake = waterIntake + amount;
-    const newLog = [...drinkingLog, { time: currentTime, amount, id: Date.now().toString() }];
-    setWaterIntake(newIntake);
-    setDrinkingLog(newLog);
-    checkHydrationBadge(newIntake);
-  };
+ const addWater = async (amount) => {
+  if (!uid) return;
+  const currentTime = new Date().toLocaleTimeString();
+  const newIntake = waterIntake + amount;
+  const newLog = [...drinkingLog, { time: currentTime, amount, id: Date.now().toString() }];
+
+  setWaterIntake(newIntake);
+  setDrinkingLog(newLog);
+
+  await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(newIntake));
+  await AsyncStorage.setItem(`drinkingLog_${uid}`, JSON.stringify(newLog));
+
+  checkHydrationBadge(newIntake);
+};
+
 
   const deleteWaterLog = (id, amount) => {
     const updatedLog = drinkingLog.filter(item => item.id !== id);
@@ -126,15 +146,16 @@ useEffect(() => {
 
  
   const checkHydrationBadge = async (currentIntake) => {
+    if (!uid) return;
     if (currentIntake >= goal) {
       try {
-        const badgesData = await AsyncStorage.getItem("badges");
+        const badgesData =await AsyncStorage.getItem(`badges_${uid}`);
         const badges = badgesData ? JSON.parse(badgesData) : {};
         const todayDate = getToday();
 
         if (badges.hydrationHeroDate !== todayDate) {
           badges.hydrationHeroDate = todayDate;
-          await AsyncStorage.setItem("badges", JSON.stringify(badges));
+         await AsyncStorage.setItem(`badges_${uid}`, JSON.stringify(badges));
           Alert.alert("🏆 Hydration Hero unlocked!", "You've reached your daily water goal!");
         }
       } catch (e) {
@@ -145,6 +166,7 @@ useEffect(() => {
 
 
   const resetDailyIntake = async (previousDate) => {
+    if (!uid) return;
     try {
       if (previousDate) {
         const dailyPercent = Math.round((waterIntake / goal) * 100);
@@ -154,20 +176,23 @@ useEffect(() => {
 
         const trimmedHistory = newHistory.slice(-30);
         setDailyHistory(trimmedHistory);
-        await AsyncStorage.setItem('dailyHistory', JSON.stringify(trimmedHistory));
+       await AsyncStorage.setItem(`dailyHistory_${uid}`, JSON.stringify(trimmedHistory));
+
 
         if (waterIntake >= goal) {
-          const badgesData = await AsyncStorage.getItem("badges");
+          const badgesData = await AsyncStorage.getItem(`badges_${uid}`);
           const badges = badgesData ? JSON.parse(badgesData) : {};
           badges.hydrationHeroDate = previousDate;
-          await AsyncStorage.setItem("badges", JSON.stringify(badges));
+          await AsyncStorage.setItem(`badges_${uid}`, JSON.stringify(badges));
+
         }
       }
       setWaterIntake(0);
       setDrinkingLog([]);
-      await AsyncStorage.setItem('waterIntake', JSON.stringify(0));
-      await AsyncStorage.setItem('drinkingLog', JSON.stringify([]));
-      await AsyncStorage.setItem('lastSavedDate', getToday());
+      await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(0));
+      await AsyncStorage.setItem(`drinkingLog_${uid}`, JSON.stringify([]));
+      await AsyncStorage.setItem(`lastSavedDate_${uid}`, getToday());
+
     } catch (error) {
       console.log('Error resetting daily intake', error);
     }
@@ -340,3 +365,4 @@ logItem: {
   backText: { fontSize: 24, color: "#007ACC", fontWeight: "bold" },
   
 });
+ 
