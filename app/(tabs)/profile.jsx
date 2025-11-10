@@ -1,16 +1,53 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ScrollView, Platform, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from '../../firebase';
+import { onAuthStateChanged, signOut, updateProfile } from 'firebase/auth';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    memberSince: '2024',
+  name: '',
+  email: '',
+  memberSince: '',
+});
+
+useEffect(() => {
+  const loadLastUser = async () => {
+    try {
+      const lastUID = await AsyncStorage.getItem("lastUID");
+      console.log("Last logged-in user:", lastUID);
+    } catch (error) {
+      console.log("Error reading last user:", error);
+    }
+  };
+
+  loadLastUser(); 
+
+  const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    if (currentUser) {
+      setUser({
+        name: currentUser.displayName || "No Name",
+        email: currentUser.email,
+        memberSince: currentUser.metadata.creationTime
+          ? new Date(currentUser.metadata.creationTime).getFullYear()
+          : "2024",
+      });
+      AsyncStorage.setItem("lastUID", currentUser.uid);
+
+    } else {
+      router.replace("/login");
+    }
   });
+
+  return () => unsubscribe();
+}, []);
+
+
+const [editModalVisible, setEditModalVisible] = useState(false);
+const [newName, setNewName] = useState(user.name);
 
   const [quickStats, setQuickStats] = useState([
     { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: '0L' },
@@ -24,114 +61,137 @@ export default function ProfileScreen() {
   }, []);
 
   const loadTodayStats = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      const waterIntake = await AsyncStorage.getItem('waterIntake');
-      const waterML = waterIntake ? parseInt(JSON.parse(waterIntake)) : 0;
-      const waterLiters = (waterML / 1000).toFixed(1);
-      
-      let steps = 0;
-      const stepsData = await AsyncStorage.getItem('steps');
-      if (stepsData) {
-        steps = parseInt(stepsData) || 0;
-      }
-      
-      const bpRecords = await AsyncStorage.getItem('bloodPressureRecords');
-      let heartRate = '-- bpm';
-      if (bpRecords) {
-        const records = JSON.parse(bpRecords);
-        if (records.length > 0) {
-          const latestRecord = records[records.length - 1];
-          heartRate = `${latestRecord.pulse} bpm`;
-        }
-      }
-      
-      const sleepSessions = await AsyncStorage.getItem('sleep.sessions.v1');
-      let sleepHours = '0h';
-      
-      if (sleepSessions) {
-        const sessions = JSON.parse(sleepSessions);
-        
-        let totalSleepMinutes = 0;
-        const todaySessions = sessions.filter(session => {
-          const sessionDate = new Date(session.startISO).toISOString().split('T')[0];
-          return sessionDate === today;
-        });
-        
-        if (todaySessions.length > 0) {
-          todaySessions.forEach(session => {
-            const start = new Date(session.startISO);
-            const end = new Date(session.endISO);
-            const duration = (end - start) / (1000 * 60);
-            totalSleepMinutes += duration;
-          });
-        } else {
-          if (sessions.length > 0) {
-            const lastSession = sessions[sessions.length - 1];
-            const lastSessionDate = new Date(lastSession.startISO).toISOString().split('T')[0];
-            
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-            
-            if (lastSessionDate === yesterdayStr || lastSessionDate === today) {
-              const start = new Date(lastSession.startISO);
-              const end = new Date(lastSession.endISO);
-              const duration = (end - start) / (1000 * 60);
-              totalSleepMinutes = duration;
-            }
-          }
-        }
-        
-        const sleepHoursValue = (totalSleepMinutes / 60).toFixed(1);
-        sleepHours = `${sleepHoursValue}h`;
-      }
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+    const uid = user.uid;
 
-      setQuickStats([
-        { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: `${waterLiters}L` },
-        { icon: 'walk-outline', color: '#32CD32', label: 'Steps', value: steps.toLocaleString() },
-        { icon: 'heart-outline', color: '#FF6347', label: 'Heart Rate', value: heartRate },
-        { icon: 'bed-outline', color: '#6A5ACD', label: 'Sleep', value: sleepHours },
-      ]);
+    const today = new Date().toISOString().split('T')[0];
 
-    } catch (error) {
-      console.log('Error loading today stats:', error);
-      setQuickStats([
-        { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: '0L' },
-        { icon: 'walk-outline', color: '#32CD32', label: 'Steps', value: '0' },
-        { icon: 'heart-outline', color: '#FF6347', label: 'Heart Rate', value: '-- bpm' },
-        { icon: 'bed-outline', color: '#6A5ACD', label: 'Sleep', value: '0h' },
-      ]);
+    const waterIntake = await AsyncStorage.getItem(`waterIntake_${uid}`);
+    const waterML = waterIntake ? parseInt(JSON.parse(waterIntake)) : 0;
+    const waterLiters = (waterML / 1000).toFixed(1);
+
+    let steps = 0;
+    const stepsData = await AsyncStorage.getItem(`steps_${uid}`);
+    if (stepsData) {
+      steps = parseInt(stepsData) || 0;
     }
-  };
 
-  const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Edit profile functionality will be added soon!');
-  };
+    const bpRecords = await AsyncStorage.getItem(`bloodPressureRecords_${uid}`);
+    let heartRate = '-- bpm';
+    if (bpRecords) {
+      const records = JSON.parse(bpRecords);
+      if (records.length > 0) {
+        const latestRecord = records[records.length - 1];
+        heartRate = `${latestRecord.pulse} bpm`;
+      }
+    }
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          onPress: () => {
-            Alert.alert('Logged Out', 'You have been logged out.');
-            router.replace('/login');
-          }
-        }
-      ]
-    );
-  };
+    const sleepSessions = await AsyncStorage.getItem(`sleep.sessions.v1_${uid}`);
+    let sleepHours = '0h';
+
+    if (sleepSessions) {
+      const sessions = JSON.parse(sleepSessions);
+      let totalSleepMinutes = 0;
+      const todaySessions = sessions.filter(session => {
+        const sessionDate = new Date(session.startISO).toISOString().split('T')[0];
+        return sessionDate === today;
+      });
+
+      if (todaySessions.length > 0) {
+        todaySessions.forEach(session => {
+          const start = new Date(session.startISO);
+          const end = new Date(session.endISO);
+          const duration = (end - start) / (1000 * 60);
+          totalSleepMinutes += duration;
+        });
+      }
+
+      const sleepHoursValue = (totalSleepMinutes / 60).toFixed(1);
+      sleepHours = `${sleepHoursValue}h`;
+    }
+
+    setQuickStats([
+      { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: `${waterLiters}L` },
+      { icon: 'walk-outline', color: '#32CD32', label: 'Steps', value: steps.toLocaleString() },
+      { icon: 'heart-outline', color: '#FF6347', label: 'Heart Rate', value: heartRate },
+      { icon: 'bed-outline', color: '#6A5ACD', label: 'Sleep', value: sleepHours },
+    ]);
+
+  } catch (error) {
+    console.log('Error loading today stats:', error);
+    setQuickStats([
+      { icon: 'water-outline', color: '#00BFFF', label: 'Water Today', value: '0L' },
+      { icon: 'walk-outline', color: '#32CD32', label: 'Steps', value: '0' },
+      { icon: 'heart-outline', color: '#FF6347', label: 'Heart Rate', value: '-- bpm' },
+      { icon: 'bed-outline', color: '#6A5ACD', label: 'Sleep', value: '0h' },
+    ]);
+  }
+};
+
+
+ const handleEditProfile = () => {
+  setNewName(user.name);
+  setEditModalVisible(true);
+};
+
+const saveProfile = async () => {
+  if (auth.currentUser && newName.trim()) {
+    try {
+      await updateProfile(auth.currentUser, { displayName: newName });
+      setUser((prev) => ({ ...prev, name: newName }));
+      setEditModalVisible(false);
+      Alert.alert("Success", "Profile updated!");
+    } catch (error) {
+      console.log("Profile update error:", error);
+      Alert.alert("Error", "Failed to update profile.");
+    }
+  }
+};
+
+const handleLogout = async () => {
+  try {
+    await signOut(auth);
+    await AsyncStorage.removeItem("lastUID");
+    router.replace("/login"); 
+  } catch (error) {
+    console.log("Logout error:", error);
+    Alert.alert("Error", "Failed to logout. Try again.");
+  }
+};
+
+
 
   useFocusEffect(
     useCallback(() => {
       loadTodayStats();
     }, [])
   );
+
+
+  <Modal visible={editModalVisible} transparent animationType="fade">
+  <View style={{ flex:1, justifyContent:'center', alignItems:'center', backgroundColor:'rgba(0,0,0,0.4)' }}>
+    <View style={{ width:'80%', backgroundColor:'#fff', borderRadius:12, padding:20 }}>
+      <Text style={{ fontSize:18, fontWeight:'bold', marginBottom:10 }}>Edit Name</Text>
+      <TextInput
+        style={{ borderWidth:1, borderColor:'#ccc', borderRadius:8, padding:10, marginBottom:12 }}
+        value={newName}
+        onChangeText={setNewName}
+        placeholder="Enter your name"
+      />
+      <View style={{ flexDirection:'row', justifyContent:'flex-end' }}>
+        <TouchableOpacity onPress={() => setEditModalVisible(false)} style={{ marginRight:12 }}>
+          <Text style={{ color:'#007AFF', fontWeight:'600' }}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={saveProfile}>
+          <Text style={{ color:'#007AFF', fontWeight:'600' }}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -209,10 +269,11 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+  <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+  <Text style={styles.logoutText}>Logout</Text>
+</TouchableOpacity>
+
       </View>
     </ScrollView>
   );
