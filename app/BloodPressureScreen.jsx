@@ -12,6 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
 import { useRouter } from "expo-router";
+import { auth } from "../firebase";   
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -23,29 +24,56 @@ const BloodPressureScreen = () => {
   const [records, setRecords] = useState([]);
   const [status, setStatus] = useState("Normal");
   const [resetModalVisible, setResetModalVisible] = useState(false);
+  const [uid, setUid] = useState(null);     
 
+  
   useEffect(() => {
-    loadData();
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUid(user.uid);
+      } else {
+        setUid(null);
+        setRecords([]);
+      }
+    });
+
+    return unsubscribe;
   }, []);
 
-  const loadData = async () => {
-    try {
-      const json = await AsyncStorage.getItem("bloodPressureRecords");
-      if (json) setRecords(JSON.parse(json));
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  
+  useEffect(() => {
+    if (!uid) return;
+
+    const loadData = async () => {
+      try {
+        const json = await AsyncStorage.getItem(`bloodPressureRecords_${uid}`);
+        if (json) setRecords(JSON.parse(json));
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    loadData();
+  }, [uid]);
 
   const saveData = async (data) => {
+    if (!uid) return;
     try {
-      await AsyncStorage.setItem("bloodPressureRecords", JSON.stringify(data));
+      await AsyncStorage.setItem(
+        `bloodPressureRecords_${uid}`,
+        JSON.stringify(data)
+      );
     } catch (error) {
       console.log(error);
     }
   };
 
   const handleAdd = async () => {
+    if (!uid) {
+      Alert.alert("Not logged in", "Please log in to save your records.");
+      return;
+    }
+
     const today = new Date().toISOString().split("T")[0];
     const newRecord = {
       systolic,
@@ -67,8 +95,12 @@ const BloodPressureScreen = () => {
   };
 
   const checkDailyBadge = async (status, today) => {
+    if (!uid) return;
+
     try {
-      const badges = JSON.parse((await AsyncStorage.getItem("badges")) || "{}");
+      const badges = JSON.parse(
+        (await AsyncStorage.getItem(`badges_${uid}`)) || "{}"
+      );
 
       if (
         status === "Normal" &&
@@ -79,7 +111,7 @@ const BloodPressureScreen = () => {
         Alert.alert("💚 Achievement unlocked!", "Healthy BP today!");
       }
 
-      await AsyncStorage.setItem("badges", JSON.stringify(badges));
+      await AsyncStorage.setItem(`badges_${uid}`, JSON.stringify(badges));
     } catch (e) {
       console.log("Error saving badges:", e);
     }
@@ -90,9 +122,14 @@ const BloodPressureScreen = () => {
   };
 
   const confirmReset = async () => {
+    if (!uid) {
+      setResetModalVisible(false);
+      return;
+    }
+
     try {
       setRecords([]);
-      await AsyncStorage.removeItem("bloodPressureRecords");
+      await AsyncStorage.removeItem(`bloodPressureRecords_${uid}`);
       setResetModalVisible(false);
       Alert.alert("Success", "All data has been reset!");
     } catch (error) {
@@ -106,10 +143,16 @@ const BloodPressureScreen = () => {
   };
 
   const chartData = {
-    labels: records.map((r) => r.date.slice(5)),
+    labels: records.map((r) => r.date.slice(5)), // mm-dd
     datasets: [
-      { data: records.map((r) => r.systolic), color: () => "rgba(255, 99, 132, 1)" },
-      { data: records.map((r) => r.diastolic), color: () => "rgba(54, 162, 235, 1)" },
+      {
+        data: records.map((r) => r.systolic),
+        color: () => "rgba(255, 99, 132, 1)",
+      },
+      {
+        data: records.map((r) => r.diastolic),
+        color: () => "rgba(54, 162, 235, 1)",
+      },
     ],
   };
 
@@ -125,7 +168,7 @@ const BloodPressureScreen = () => {
       <Text style={styles.title}>Blood Pressure</Text>
 
       <View style={styles.inputsContainer}>
-        <View style={styles.inputBox}>
+        <View className="inputBox" style={styles.inputBox}>
           <Text style={styles.label}>Systolic</Text>
           <Text style={styles.value}>{systolic}</Text>
           <View style={styles.selector}>
@@ -165,7 +208,6 @@ const BloodPressureScreen = () => {
         </View>
       </View>
 
-  
       <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
         <Text style={styles.buttonText}>Add</Text>
       </TouchableOpacity>
@@ -212,9 +254,11 @@ const BloodPressureScreen = () => {
             }}
             style={{ marginVertical: 8, borderRadius: 12 }}
           />
-          
-        
-          <TouchableOpacity style={styles.smallResetButton} onPress={handleResetData}>
+
+          <TouchableOpacity
+            style={styles.smallResetButton}
+            onPress={handleResetData}
+          >
             <Text style={styles.smallResetButtonText}>Reset Data</Text>
           </TouchableOpacity>
         </>
@@ -230,14 +274,20 @@ const BloodPressureScreen = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Reset Data</Text>
             <Text style={styles.modalText}>
-              Are you sure you want to delete all blood pressure records? 
-              This action cannot be undone.
+              Are you sure you want to delete all blood pressure records? This
+              action cannot be undone.
             </Text>
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={cancelReset}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={cancelReset}
+              >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, styles.confirmButton]} onPress={confirmReset}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={confirmReset}
+              >
                 <Text style={styles.modalButtonText}>Reset</Text>
               </TouchableOpacity>
             </View>
@@ -268,21 +318,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 10,
   },
- 
-  smallResetButton: {
-    backgroundColor: "#ff4444",
-    borderRadius: 8,
-    padding: 8,
-    alignItems: "center",
-    marginVertical: 10,
-    alignSelf: "center",
-    width: "40%",
-  },
-  smallResetButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
   buttonText: { color: "#fff", fontWeight: "bold" },
   resultCard: {
     backgroundColor: "#f9f9f9",
@@ -297,6 +332,21 @@ const styles = StyleSheet.create({
   high: { color: "red" },
   low: { color: "blue" },
   desc: { marginTop: 8, textAlign: "center", color: "#555" },
+
+  smallResetButton: {
+    backgroundColor: "#ff4444",
+    borderRadius: 8,
+    padding: 8,
+    alignItems: "center",
+    marginVertical: 10,
+    alignSelf: "center",
+    width: "40%",
+  },
+  smallResetButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
 
   modalContainer: {
     flex: 1,
