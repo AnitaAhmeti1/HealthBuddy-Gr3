@@ -11,10 +11,11 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebase"; 
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "../../firebase";
 
 export default function RegisterScreen() {
+  const [name, setName] = useState("");              
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -24,7 +25,7 @@ export default function RegisterScreen() {
   const router = useRouter();
 
   const validate = () => {
-    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setError("All fields are required");
       return false;
     }
@@ -49,7 +50,11 @@ export default function RegisterScreen() {
     if (!validate()) return;
     try {
       setLoading(true);
-      await createUserWithEmailAndPassword(auth, email, password);
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+      
+      await updateProfile(cred.user, { displayName: name });
+
       setModalVisible(true);
     } catch (e) {
       if (e.code === "auth/email-already-in-use") {
@@ -73,6 +78,15 @@ export default function RegisterScreen() {
         <Image source={require("../../assets/Logo.png")} style={styles.logo} />
         <Text style={styles.title}>Create new account</Text>
         <Text style={styles.subtitle}>Join HealthBuddy and start tracking your health</Text>
+
+       
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          placeholderTextColor="#666"
+          value={name}
+          onChangeText={setName}
+        />
 
         <TextInput
           style={styles.input}
@@ -169,8 +183,6 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   link: { color: "#007AFF", fontWeight: "600", marginTop: 15 },
   error: { color: "red", marginBottom: 8, textAlign: "center" },
-
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
