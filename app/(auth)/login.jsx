@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebase"; 
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../../firebase"; 
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");       
@@ -39,9 +39,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
-      
       router.replace("/home");
-  
     } catch (e) {
       if (e.code === "auth/invalid-credential" || e.code === "auth/wrong-password") {
         setError("Incorrect email or password");
@@ -49,6 +47,26 @@ export default function LoginScreen() {
         setError("No user found with this email");
       } else {
         setError(e.message ?? "Login failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setError("");
+      setLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      // këtu mundesh me ru user-in në firestore nëse të duhet
+      // const user = result.user;
+      router.replace("/home");
+    } catch (e) {
+      console.log("Google sign in error", e);
+      if (e.code === "auth/popup-closed-by-user") {
+        setError("Google sign-in was cancelled");
+      } else {
+        setError("Google sign-in failed");
       }
     } finally {
       setLoading(false);
@@ -99,6 +117,26 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
+        {/* divider OR */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.divider} />
+        </View>
+
+        {/* Google Sign-In button */}
+        <TouchableOpacity
+          style={[styles.googleButton, loading && { opacity: 0.7 }]}
+          onPress={handleGoogleSignIn}
+          disabled={loading}
+        >
+          <View style={styles.googleContent}>
+            {/* nëse ke një ikonë google, përdore këtu */}
+            {/* <Image source={require("../../assets/google.png")} style={styles.googleIcon} /> */}
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
+          </View>
+        </TouchableOpacity>
+
         <View style={styles.registerContainer}>
           <Text style={styles.text}>Don't have an account? </Text>
           <TouchableOpacity onPress={goToRegister}>
@@ -147,4 +185,46 @@ const styles = StyleSheet.create({
   text: { color: "#444" },
   link: { color: "#007AFF", fontWeight: "600" },
   error: { color: "red", marginBottom: 8, textAlign: "center" },
+
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 12,
+    width: "100%",
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ddd",
+  },
+  dividerText: {
+    marginHorizontal: 8,
+    color: "#888",
+    fontSize: 13,
+  },
+
+  googleButton: {
+    backgroundColor: "#fff",
+    borderRadius: 30,
+    width: "100%",
+    paddingVertical: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  googleContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // googleIcon: {
+  //   width: 20,
+  //   height: 20,
+  //   marginRight: 8,
+  // },
+  googleButtonText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#444",
+  },
 });
