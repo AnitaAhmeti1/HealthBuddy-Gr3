@@ -11,7 +11,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase"; 
+import { auth } from "../../firebase"; 
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");       
@@ -61,7 +61,7 @@ export default function LoginScreen() {
     <LinearGradient colors={["#c2e9fb", "#a1c4fd"]} style={styles.container}>
       <View style={styles.card}>
         <Image
-          source={require("../assets/Logo.png")}
+          source={require("../../assets/Logo.png")}
           style={styles.logo}
         />
         <Text style={styles.title}>Welcome Back!</Text>

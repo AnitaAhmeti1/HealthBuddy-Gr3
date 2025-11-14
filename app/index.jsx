@@ -14,7 +14,7 @@ export default function IndexScreen() {
     }).start();
 
     const timeout = setTimeout(() => {
-      router.replace("/login");
+      router.replace("../login");
     }, 3000);
 
     return () => clearTimeout(timeout);

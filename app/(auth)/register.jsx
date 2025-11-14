@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase"; 
+import { auth } from "../../firebase"; 
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
@@ -70,7 +70,7 @@ export default function RegisterScreen() {
   return (
     <LinearGradient colors={["#a1c4fd", "#c2e9fb"]} style={styles.container}>
       <View style={styles.card}>
-        <Image source={require("../assets/Logo.png")} style={styles.logo} />
+        <Image source={require("../../assets/Logo.png")} style={styles.logo} />
         <Text style={styles.title}>Create new account</Text>
         <Text style={styles.subtitle}>Join HealthBuddy and start tracking your health</Text>
 
