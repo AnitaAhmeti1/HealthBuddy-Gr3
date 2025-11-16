@@ -111,6 +111,21 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Seksioni për Firestore CRUD – Health Goals */}
+      <Text style={styles.sectionTitle}>Health Goals (Firestore)</Text>
+      <View style={styles.goalsCard}>
+        <Text style={styles.goalsText}>
+          Create and manage your health goals (water, steps, sleep, blood pressure) stored in Firebase Firestore.
+        </Text>
+        <TouchableOpacity
+          style={styles.goalsButton}
+          onPress={() => router.push("/healthGoals")}  
+        >
+          <Ionicons name="checkmark-done-outline" size={20} color="#fff" />
+          <Text style={styles.goalsButtonText}>Open Health Goals</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -178,4 +193,38 @@ const styles = StyleSheet.create({
   },
   articleTitle: { fontSize: 16, fontWeight: "bold", color: "#333" },
   articleDesc: { fontSize: 13, color: "#555", marginTop: 4 },
+
+  // 🔹 Styles për Health Goals seksionin
+  goalsCard: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 15,
+    marginHorizontal: 15,
+    marginBottom: 30,
+    marginTop: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  goalsText: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 12,
+  },
+  goalsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007ACC",
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  goalsButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    marginLeft: 8,
+    fontSize: 15,
+  },
 });
