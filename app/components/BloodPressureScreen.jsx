@@ -12,7 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
 import { useRouter } from "expo-router";
-import { auth } from "../firebase";   
+import { auth } from "../../firebase";   
 
 const screenWidth = Dimensions.get("window").width;
 

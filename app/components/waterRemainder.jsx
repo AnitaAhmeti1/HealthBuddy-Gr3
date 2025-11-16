@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import * as Progress from 'react-native-progress';
-import { auth } from '../firebase';
+import { auth } from '../../firebase';
 
 export default function WaterTracker() {
   const router = useRouter(); 

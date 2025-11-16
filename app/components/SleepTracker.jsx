@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from '../firebase';
+import { auth } from '../../firebase';
 
 const pad2 = (n) => (n < 10 ? `0${n}` : String(n));
 const formatYYYYMMDD = (d) =>

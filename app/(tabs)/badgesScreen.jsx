@@ -2,29 +2,29 @@ import { View, Text, StyleSheet, FlatList } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { auth } from "../../firebase";   // 🔹 Shto këtë import
+import { auth } from "../../firebase";   
 
 export default function BadgesScreen() {
   const [badges, setBadges] = useState([]);
   const [uid, setUid] = useState(null);
 
-  // 🔹 Merr uid nga Firebase Auth
+  
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setUid(user.uid);
       } else {
         setUid(null);
-        setBadges([]); // nëse del prej llogarisë, pastro badge-t në UI
+        setBadges([]); 
       }
     });
 
     return unsubscribe;
   }, []);
 
-  // 🔹 Lexo badge-t për user-in aktual
+  
   useEffect(() => {
-    if (!uid) return; // mos provo me lexu pa uid
+    if (!uid) return; 
 
     const loadBadges = async () => {
       try {
@@ -40,7 +40,6 @@ export default function BadgesScreen() {
             desc: "Drank 3500ml in one day",
             icon: "water-outline",
             color: "#00BFFF",
-            // 🔹 unlocked sipas datës së ruajtur për këtë user
             unlocked: storedBadges.hydrationHeroDate === today,
           },
           {
@@ -76,7 +75,7 @@ export default function BadgesScreen() {
     };
 
     loadBadges();
-  }, [uid]); // rifresko sa herë që ndryshon user-i
+  }, [uid]); 
 
   return (
     <View style={styles.container}>

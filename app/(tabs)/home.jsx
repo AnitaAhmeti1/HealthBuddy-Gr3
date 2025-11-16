@@ -62,7 +62,7 @@ export default function HomeScreen() {
       <View style={styles.cardContainer}>
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/waterRemainder")}
+          onPress={() => router.push("components/waterRemainder")}
         >
           <Ionicons name="water-outline" size={40} color="#00BFFF" />
           <Text style={styles.cardTitle}>Water Tracker</Text>
@@ -71,7 +71,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/BloodPressureScreen")}
+          onPress={() => router.push("components/BloodPressureScreen")}
         >
           <Ionicons name="heart-outline" size={40} color="#FF6347" />
           <Text style={styles.cardTitle}>Blood Pressure</Text>
@@ -80,7 +80,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/SleepTracker")}
+          onPress={() => router.push("components/SleepTracker")}
         >
           <Ionicons name="bed-outline" size={40} color="#6A5ACD" />
           <Text style={styles.cardTitle}>Sleep Tracker</Text>
@@ -89,7 +89,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/ActivityTracker")}
+          onPress={() => router.push("components/ActivityTracker")}
         >
           <Ionicons name="walk-outline" size={40} color="#32CD32" />
           <Text style={styles.cardTitle}>Steps Tracker</Text>
