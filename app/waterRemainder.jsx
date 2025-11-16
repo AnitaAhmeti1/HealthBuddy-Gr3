@@ -1,12 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
 import { useEffect, useState } from 'react';
-import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import * as Progress from 'react-native-progress';
 import { auth } from '../firebase';
-
-
 
 export default function WaterTracker() {
   const router = useRouter(); 
@@ -16,6 +14,7 @@ export default function WaterTracker() {
   const [dailyHistory, setDailyHistory] = useState([]);
   const [uid, setUid] = useState(null);
   const [today, setToday] = useState(new Date().toISOString().split('T')[0]);
+  const [quote, setQuote] = useState("");
 
   const motivationalQuotes = [
     "Stay hydrated, stay healthy! 💧",
@@ -30,8 +29,6 @@ export default function WaterTracker() {
     "Slow down, your body needs balance 🧘‍♂️",
   ];
 
-  const [quote, setQuote] = useState("");
-
   const getToday = () => new Date().toISOString().split('T')[0];
 
   const rawProgress = waterIntake / goal;
@@ -40,53 +37,62 @@ export default function WaterTracker() {
   if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
   else if (rawProgress > 1.5) progressColor = '#FF4500';
 
-  useEffect(() => {
-  const unsubscribe = auth.onAuthStateChanged((user) => {
-    if (user) {
-      setUid(user.uid);
-    } else {
-      setUid(null);
-    }
-  });
-  return unsubscribe;
-}, []);
-
-
-
-  useEffect(() => {
-    if (rawProgress <= 1) {
-      setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
-    } else {
-      setQuote(overhydrationQuotes[Math.floor(Math.random() * overhydrationQuotes.length)]);
-    }
-  }, [waterIntake]);
-
   
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) setUid(user.uid);
+      else setUid(null);
+    });
+    return unsubscribe;
+  }, []);
+
+ 
 useEffect(() => {
-
-  const loadData = async () => {
+  const updateTip = async () => {
     try {
-      const savedWater = await AsyncStorage.getItem(`waterIntake_${uid}`);
-      const savedLog = await AsyncStorage.getItem(`drinkingLog_${uid}`);
-      const savedHistory = await AsyncStorage.getItem(`dailyHistory_${uid}`);
-      const savedDate = await AsyncStorage.getItem(`lastSavedDate_${uid}`);
+      const response = await fetch(
+          "https://api.quotable.io/random?tags=inspirational"
+      );
 
-      if (savedWater !== null) setWaterIntake(JSON.parse(savedWater));
-      if (savedLog !== null) setDrinkingLog(JSON.parse(savedLog));
-      if (savedHistory !== null) setDailyHistory(JSON.parse(savedHistory));
+      if (!response.ok) throw new Error("Failed to fetch quote");
 
-      const currentDate = getToday();
-      if (savedDate !== currentDate) {
-        await resetDailyIntake(savedDate || currentDate);
-      }
-    } catch (error) {
-      console.log('Error loading data', error);
+      const data = await response.json();
+
+      setQuote(`${data.content} — ${data.author}`);
+    } catch (err) {
+      console.log("Error:", err);
+      setQuote("Stay healthy 💧");
     }
   };
 
-  loadData();
-}, [uid]); 
+  updateTip();
+}, [waterIntake]);
 
+
+
+ 
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const savedWater = await AsyncStorage.getItem(`waterIntake_${uid}`);
+        const savedLog = await AsyncStorage.getItem(`drinkingLog_${uid}`);
+        const savedHistory = await AsyncStorage.getItem(`dailyHistory_${uid}`);
+        const savedDate = await AsyncStorage.getItem(`lastSavedDate_${uid}`);
+
+        if (savedWater !== null) setWaterIntake(JSON.parse(savedWater));
+        if (savedLog !== null) setDrinkingLog(JSON.parse(savedLog));
+        if (savedHistory !== null) setDailyHistory(JSON.parse(savedHistory));
+
+        const currentDate = getToday();
+        if (savedDate !== currentDate) {
+          await resetDailyIntake(savedDate || currentDate);
+        }
+      } catch (error) {
+        console.log('Error loading data', error);
+      }
+    };
+    loadData();
+  }, [uid]);
 
   
   useEffect(() => {
@@ -102,7 +108,6 @@ useEffect(() => {
         scheduleReset();
       }, nextReset.getTime() - now.getTime());
     };
-
     scheduleReset();
   }, []);
 
@@ -121,22 +126,20 @@ useEffect(() => {
     saveData();
   }, [waterIntake, drinkingLog, dailyHistory]);
 
-  
- const addWater = async (amount) => {
-  if (!uid) return;
-  const currentTime = new Date().toLocaleTimeString();
-  const newIntake = waterIntake + amount;
-  const newLog = [...drinkingLog, { time: currentTime, amount, id: Date.now().toString() }];
+  const addWater = async (amount) => {
+    if (!uid) return;
+    const currentTime = new Date().toLocaleTimeString();
+    const newIntake = waterIntake + amount;
+    const newLog = [...drinkingLog, { time: currentTime, amount, id: Date.now().toString() }];
 
-  setWaterIntake(newIntake);
-  setDrinkingLog(newLog);
+    setWaterIntake(newIntake);
+    setDrinkingLog(newLog);
 
-  await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(newIntake));
-  await AsyncStorage.setItem(`drinkingLog_${uid}`, JSON.stringify(newLog));
+    await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(newIntake));
+    await AsyncStorage.setItem(`drinkingLog_${uid}`, JSON.stringify(newLog));
 
-  checkHydrationBadge(newIntake);
-};
-
+    checkHydrationBadge(newIntake);
+  };
 
   const deleteWaterLog = (id, amount) => {
     const updatedLog = drinkingLog.filter(item => item.id !== id);
@@ -144,18 +147,17 @@ useEffect(() => {
     setWaterIntake(waterIntake - amount);
   };
 
- 
   const checkHydrationBadge = async (currentIntake) => {
     if (!uid) return;
     if (currentIntake >= goal) {
       try {
-        const badgesData =await AsyncStorage.getItem(`badges_${uid}`);
+        const badgesData = await AsyncStorage.getItem(`badges_${uid}`);
         const badges = badgesData ? JSON.parse(badgesData) : {};
         const todayDate = getToday();
 
         if (badges.hydrationHeroDate !== todayDate) {
           badges.hydrationHeroDate = todayDate;
-         await AsyncStorage.setItem(`badges_${uid}`, JSON.stringify(badges));
+          await AsyncStorage.setItem(`badges_${uid}`, JSON.stringify(badges));
           Alert.alert("🏆 Hydration Hero unlocked!", "You've reached your daily water goal!");
         }
       } catch (e) {
@@ -164,139 +166,114 @@ useEffect(() => {
     }
   };
 
-
   const resetDailyIntake = async (previousDate) => {
     if (!uid) return;
     try {
       if (previousDate) {
         const dailyPercent = Math.round((waterIntake / goal) * 100);
-
-       const timestamp = new Date().toISOString();
-      const newHistory = [...dailyHistory, { date: timestamp, percent: dailyPercent }];
-
+        const timestamp = new Date().toISOString();
+        const newHistory = [...dailyHistory, { date: timestamp, percent: dailyPercent }];
         const trimmedHistory = newHistory.slice(-30);
         setDailyHistory(trimmedHistory);
-       await AsyncStorage.setItem(`dailyHistory_${uid}`, JSON.stringify(trimmedHistory));
-
-
-        if (waterIntake >= goal) {
-          const badgesData = await AsyncStorage.getItem(`badges_${uid}`);
-          const badges = badgesData ? JSON.parse(badgesData) : {};
-          badges.hydrationHeroDate = previousDate;
-          await AsyncStorage.setItem(`badges_${uid}`, JSON.stringify(badges));
-
-        }
+        await AsyncStorage.setItem(`dailyHistory_${uid}`, JSON.stringify(trimmedHistory));
       }
       setWaterIntake(0);
       setDrinkingLog([]);
       await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(0));
       await AsyncStorage.setItem(`drinkingLog_${uid}`, JSON.stringify([]));
       await AsyncStorage.setItem(`lastSavedDate_${uid}`, getToday());
-
     } catch (error) {
       console.log('Error resetting daily intake', error);
     }
   };
 
+  const recentDays = dailyHistory.slice(-7);
+  const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
-const recentDays = dailyHistory.slice(-7);
-const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const chartData = {
+    labels: recentDays.map((item) => {
+      const dateObj = new Date(item.date);
+      const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+      const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return `${day}\n${time} \t`;
+    }),
+    datasets: [
+      { data: recentDays.map(item => item.percent) }
+    ],
+  };
 
-const chartData = {
-  labels: recentDays.map((item, index) => {
-    const dateObj = new Date(item.date);
-    const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-    const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    return `${day}\n${time} \t`;
-  }),
-  datasets: [
-    {
-      data: recentDays.map(item => item.percent),
-    },
-  ],
-};
+  const renderHeader = () => (
+    <View>
+      <TouchableOpacity
+        onPress={() => router.push("/(tabs)/home")}
+        style={styles.backButton}
+      >
+        <Text style={styles.backText}>←</Text>
+      </TouchableOpacity>
 
+      <Text style={styles.dateText}>Today is {currentDate}</Text>
+      <Text style={styles.quote}>{quote}</Text>
 
-
-const renderHeader = () => (
-  <View>
-    <TouchableOpacity
-      onPress={() => router.push("/(tabs)/home")}
-      style={styles.backButton}
-    >
-      <Text style={styles.backText}>←</Text>
-    </TouchableOpacity>
-
-    <Text style={styles.dateText}>Today is {currentDate}</Text>
-    <Text style={styles.quote}>{quote}</Text>
-
-    <View style={styles.progressContainer}>
-      <Progress.Circle
-        size={200}
-        progress={progress}
-        showsText={true}
-        color={progressColor}
-        unfilledColor={'#E0F7FA'}
-        borderWidth={3}
-        thickness={10}
-        textStyle={{ color: '#007ACC', fontWeight: 'bold', fontSize: 20 }}
-        formatText={() => `${Math.round(rawProgress * 100)}%`}
-        animated={true}
-      />
-      <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
-    </View>
-
-    {recentDays.length > 0 && (
-      <View style={styles.chartContainer}>
-        <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
-        <BarChart
-          data={chartData}
-          width={Dimensions.get("window").width - 40}
-          height={200}
-          yAxisSuffix="%"
-          chartConfig={{
-            backgroundColor: "#E3F2FD",
-            backgroundGradientFrom: "#E3F2FD",
-            backgroundGradientTo: "#BBDEFB",
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
-            labelColor: () => "#007ACC",
-            propsForLabels: { 
-              fontSize: 8, 
-              textAlign: 'center',
-              numberOfLines: 2,
-              lineHeight: 10
-            },
-          }}
-          style={styles.chart}
+      <View style={styles.progressContainer}>
+        <Progress.Circle
+          size={200}
+          progress={progress}
+          showsText={true}
+          color={progressColor}
+          unfilledColor={'#E0F7FA'}
+          borderWidth={3}
+          thickness={10}
+          textStyle={{ color: '#007ACC', fontWeight: 'bold', fontSize: 20 }}
+          formatText={() => `${Math.round(rawProgress * 100)}%`}
+          animated={true}
         />
+        <Text style={styles.subText}>{waterIntake} ml of {goal} ml</Text>
       </View>
-    )}
 
-    <View style={{ width: '100%', paddingHorizontal: 10 }}>
-      <View style={styles.buttonRow}>
-        {[200, 300, 400, 500].map(amount => (
-          <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
-            <Text style={styles.addButtonText}>+{amount} ml</Text>
-          </TouchableOpacity>
-        ))}
+      {recentDays.length > 0 && (
+        <View style={styles.chartContainer}>
+          <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
+          <BarChart
+            data={chartData}
+            width={Dimensions.get("window").width - 40}
+            height={200}
+            yAxisSuffix="%"
+            chartConfig={{
+              backgroundColor: "#E3F2FD",
+              backgroundGradientFrom: "#E3F2FD",
+              backgroundGradientTo: "#BBDEFB",
+              decimalPlaces: 0,
+              color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
+              labelColor: () => "#007ACC",
+              propsForLabels: { fontSize: 8, textAlign: 'center', numberOfLines: 2, lineHeight: 10 },
+            }}
+            style={styles.chart}
+          />
+        </View>
+      )}
+
+      <View style={{ width: '100%', paddingHorizontal: 10 }}>
+        <View style={styles.buttonRow}>
+          {[200, 300, 400, 500].map(amount => (
+            <TouchableOpacity key={amount} style={styles.addButton} onPress={() => addWater(amount)}>
+              <Text style={styles.addButtonText}>+{amount} ml</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </View>
-  </View>
-);
+  );
 
+  const renderLogItem = ({ item }) => (
+    <View style={styles.logItem}>
+      <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
+      <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
-const renderLogItem = ({ item }) => (
-  <View style={styles.logItem}>
-    <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
-    <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </TouchableOpacity>
-  </View>
-);
-
-return (
-  
+  return (
     <FlatList
       data={drinkingLog}
       renderItem={renderLogItem}
@@ -305,12 +282,10 @@ return (
       contentContainerStyle={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
     />
-  
-);
+  );
 }
 
 const styles = StyleSheet.create({
-  
   scrollContainer: {
     flexGrow: 1,
     alignItems: 'stretch',
@@ -327,42 +302,13 @@ const styles = StyleSheet.create({
   chartContainer: { marginBottom: 20 },
   weekTitle: { fontSize: 18, fontWeight: 'bold', color: '#007ACC', marginBottom: 10, textAlign: 'center' },
   chart: { borderRadius: 10 },
-  buttonRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between', 
-  width: '100%',
-  marginVertical: 10,
-},
-addButton: {
-  backgroundColor: '#00BFFF',
-  paddingVertical: 12,
-  flex: 1,              
-  marginHorizontal: 4,
-  borderRadius: 20,
-  alignItems: 'center',
-},
-addButtonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 16,
-},
-logItem: {
-  backgroundColor: '#fff',
-  paddingVertical: 15,
-  paddingHorizontal: 15,
-  borderRadius: 10,
-  marginVertical: 5,
-  width: '100%',         
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
-
+  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginVertical: 10 },
+  addButton: { backgroundColor: '#00BFFF', paddingVertical: 12, flex: 1, marginHorizontal: 4, borderRadius: 20, alignItems: 'center' },
+  addButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  logItem: { backgroundColor: '#fff', paddingVertical: 15, paddingHorizontal: 15, borderRadius: 10, marginVertical: 5, width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   logText: { fontSize: 17, color: '#333', flex: 1, flexWrap: 'wrap' },
   deleteButton: { backgroundColor: '#FF6347', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8 },
   deleteButtonText: { color: '#fff', fontWeight: 'bold' },
   backButton: { marginBottom: 12, padding: 10, alignSelf: "flex-start" },
   backText: { fontSize: 24, color: "#007ACC", fontWeight: "bold" },
-  
 });
- 

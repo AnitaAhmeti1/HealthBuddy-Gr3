@@ -1,0 +1,8 @@
+{
+  "todayIntake": 1200,
+  "goal": 3500,
+  "drinkingLog": [
+    { "time": "08:00", "amount": 200, "id": "1" },
+    { "time": "10:00", "amount": 300, "id": "2" }
+  ]
+}
