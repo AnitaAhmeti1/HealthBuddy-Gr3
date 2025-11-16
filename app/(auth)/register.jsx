@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,10 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const confirmRef = useRef(null);
+
 
   const validate = () => {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -86,6 +90,8 @@ export default function RegisterScreen() {
           placeholderTextColor="#666"
           value={name}
           onChangeText={setName}
+          returnKeyType="next"
+          onSubmitEditing={() => emailRef.current?.focus()}
         />
 
         <TextInput
@@ -96,6 +102,8 @@ export default function RegisterScreen() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
+          returnKeyType="next"
+          ref={emailRef}
         />
         <TextInput
           style={styles.input}
@@ -104,6 +112,9 @@ export default function RegisterScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          returnKeyType="next"
+          ref={passwordRef}
+
         />
         <TextInput
           style={styles.input}
@@ -112,6 +123,8 @@ export default function RegisterScreen() {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
+          returnKeyType="done"
+          onSubmitEditing={handleRegister}
         />
 
         {!!error && <Text style={styles.error}>{error}</Text>}

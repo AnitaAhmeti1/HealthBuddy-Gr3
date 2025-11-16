@@ -178,7 +178,7 @@ export default function ProfileScreen() {
       {/* Profile Header */}
       <View style={styles.header}>
         <Image
-          source={{ uri: 'https://i.pravatar.cc/150?img=12' }}
+          source={{ uri: 'https://cdn-icons-png.flaticon.com/512/12225/12225935.png' }}
           style={styles.avatar}
         />
         <Text style={styles.name}>{user.name}</Text>

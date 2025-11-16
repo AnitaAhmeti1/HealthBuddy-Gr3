@@ -101,6 +101,8 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
         />
 
         {!!error && <Text style={styles.error}>{error}</Text>}
