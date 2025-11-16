@@ -17,7 +17,7 @@ import {
   loadHealthGoals,
   updateHealthGoal,
   deleteHealthGoal,
-} from "../services/healthGoalsService";
+} from "../services/healthGoalsServices";
 
 const CATEGORIES = [
   { key: "water", label: "Water" },
@@ -40,19 +40,16 @@ export default function HealthGoalsScreen() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Leximi real-time i goals nga Firestore
+  // Real-time reading of goals from Firestore
   useEffect(() => {
     if (!user) return;
     setLoadingList(true);
     setError("");
 
-    const unsubscribe = loadHealthGoals(
-      user,
-      (data) => {
-        setGoals(data);
-        setLoadingList(false);
-      }
-    );
+    const unsubscribe = loadHealthGoals(user, (data) => {
+      setGoals(data);
+      setLoadingList(false);
+    });
 
     return () => unsubscribe && unsubscribe();
   }, [user]);
@@ -66,11 +63,11 @@ export default function HealthGoalsScreen() {
     resetMessages();
 
     if (!user) {
-      setError("Duhet të jeni të kyçur.");
+      setError("You must be logged in.");
       return;
     }
     if (!title.trim() || !target.trim()) {
-      setError("Ju lutem plotësoni titullin dhe targetin.");
+      setError("Please fill in both title and target.");
       return;
     }
 
@@ -79,9 +76,9 @@ export default function HealthGoalsScreen() {
       await addHealthGoal(user, title.trim(), category, target.trim());
       setTitle("");
       setTarget("");
-      setSuccess("Health goal u shtua me sukses.");
+      setSuccess("Health goal added successfully.");
     } catch (e) {
-      setError("Gabim gjatë shtimit të goal.");
+      setError("Error while adding the goal.");
     } finally {
       setLoadingAction(false);
     }
@@ -95,9 +92,9 @@ export default function HealthGoalsScreen() {
       await updateHealthGoal(user, goal.id, {
         completed: !goal.completed,
       });
-      setSuccess("Health goal u përditësua.");
+      setSuccess("Health goal updated.");
     } catch (e) {
-      setError("Gabim gjatë përditësimit.");
+      setError("Error while updating the goal.");
     } finally {
       setLoadingAction(false);
     }
@@ -109,9 +106,9 @@ export default function HealthGoalsScreen() {
     try {
       setLoadingAction(true);
       await deleteHealthGoal(user, goalId);
-      setSuccess("Health goal u fshi.");
+      setSuccess("Health goal deleted.");
     } catch (e) {
-      setError("Gabim gjatë fshirjes.");
+      setError("Error while deleting the goal.");
     } finally {
       setLoadingAction(false);
     }
@@ -129,7 +126,7 @@ export default function HealthGoalsScreen() {
     return (
       <View style={styles.center}>
         <Text style={{ fontSize: 16, color: "#333" }}>
-          Nuk jeni të kyçur. Ju lutem logohuni përsëri.
+          You are not logged in. Please log in again.
         </Text>
       </View>
     );
@@ -144,8 +141,7 @@ export default function HealthGoalsScreen() {
     >
       <View style={{ flex: 1 }}>
         <Text style={styles.goalTitle}>
-          {item.title}{" "}
-          {item.completed ? "(Completed)" : ""}
+          {item.title} {item.completed ? "(Completed)" : ""}
         </Text>
         <Text style={styles.goalMeta}>
           Category: {item.category} • Target: {item.target}
@@ -179,29 +175,26 @@ export default function HealthGoalsScreen() {
     >
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.screenTitle}>Health Goals (Firestore)</Text>
+        <Text style={styles.screenTitle}>Health Goals</Text>
       </View>
 
-      {/* Forma për shtim goal-i */}
+      {/* Form for adding a new goal */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Create New Goal</Text>
 
         <TextInput
           style={styles.input}
-          placeholder="Title (p.sh. Drink 3500ml water)"
+          placeholder="Title (e.g. Drink 3500 ml water)"
           value={title}
           onChangeText={setTitle}
         />
 
         <TextInput
           style={styles.input}
-          placeholder="Target (p.sh. 3500 ml, 8000 steps)"
+          placeholder="Target (e.g. 3500 ml, 8000 steps)"
           value={target}
           onChangeText={setTarget}
         />
@@ -248,7 +241,7 @@ export default function HealthGoalsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Lista e goals nga Firestore */}
+      {/* List of goals from Firestore */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Your Goals</Text>
 
@@ -259,7 +252,7 @@ export default function HealthGoalsScreen() {
           </View>
         ) : goals.length === 0 ? (
           <Text style={{ color: "#666", fontSize: 14 }}>
-            Nuk keni ende asnjë goal. Shtoni një më lart.
+            You don't have any goals yet. Add one above.
           </Text>
         ) : (
           <FlatList

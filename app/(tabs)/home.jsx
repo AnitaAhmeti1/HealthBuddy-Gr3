@@ -113,10 +113,10 @@ export default function HomeScreen() {
       </View>
 
       {/* Seksioni për Firestore CRUD – Health Goals */}
-      <Text style={styles.sectionTitle}>Health Goals (Firestore)</Text>
+      <Text style={styles.sectionTitle}>Health Goals</Text>
       <View style={styles.goalsCard}>
         <Text style={styles.goalsText}>
-          Create and manage your health goals (water, steps, sleep, blood pressure) stored in Firebase Firestore.
+          Create and manage your health goals (water, steps, sleep, blood pressure).
         </Text>
         <TouchableOpacity
           style={styles.goalsButton}
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   articleTitle: { fontSize: 16, fontWeight: "bold", color: "#333" },
   articleDesc: { fontSize: 13, color: "#555", marginTop: 4 },
 
-  // 🔹 Styles për Health Goals seksionin
+  
   goalsCard: {
     backgroundColor: "#fff",
     padding: 16,
