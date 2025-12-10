@@ -14,13 +14,28 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.healthbuddy.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "HealthBuddy needs access to your photo library to let you choose a profile picture.",
+        "NSCameraUsageDescription": "HealthBuddy needs access to your camera to let you take profile pictures.",
+        "NSPhotoLibraryAddUsageDescription": "HealthBuddy needs permission to save photos to your library.",
+        "NSMicrophoneUsageDescription": "HealthBuddy needs access to your microphone for certain features."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.healthbuddy.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "ACCESS_MEDIA_LOCATION"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -30,7 +45,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "HealthBuddy needs access to your photos to let you set a profile picture.",
+          "cameraPermission": "HealthBuddy needs access to your camera to let you take profile pictures."
+        }
+      ]
     ]
   }
 }
