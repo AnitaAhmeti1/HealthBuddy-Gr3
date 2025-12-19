@@ -1,20 +1,63 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   Dimensions,
   Alert,
   Modal,
+  FlatList,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
 import { useRouter } from "expo-router";
-import { auth } from "../../firebase";   
+import { auth } from "../../firebase";
 
 const screenWidth = Dimensions.get("window").width;
+
+// Komponentë statikë të memoizuar
+const InputBox = React.memo(({ label, value, onIncrement, onDecrement }) => (
+  <View style={styles.inputBox}>
+    <Text style={styles.label}>{label}</Text>
+    <Text style={styles.value}>{value}</Text>
+    <View style={styles.selector}>
+      <TouchableOpacity onPress={onDecrement}>
+        <Text style={styles.arrow}>-</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onIncrement}>
+        <Text style={styles.arrow}>+</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+));
+
+const ResultCard = React.memo(({ systolic, diastolic, status }) => (
+  <View style={styles.resultCard}>
+    <Text style={styles.resultText}>
+      {systolic}/{diastolic} mmHg
+    </Text>
+    <Text
+      style={[
+        styles.status,
+        status === "Normal"
+          ? styles.normal
+          : status === "High"
+          ? styles.high
+          : styles.low,
+      ]}
+    >
+      {status}
+    </Text>
+    <Text style={styles.desc}>
+      {status === "Normal"
+        ? "Normal blood pressure. Manage stress and stay healthy."
+        : status === "High"
+        ? "High pressure. Reduce stress and monitor regularly."
+        : "Low pressure. Stay hydrated and rest properly."}
+    </Text>
+  </View>
+));
 
 const BloodPressureScreen = () => {
   const router = useRouter();
@@ -24,23 +67,19 @@ const BloodPressureScreen = () => {
   const [records, setRecords] = useState([]);
   const [status, setStatus] = useState("Normal");
   const [resetModalVisible, setResetModalVisible] = useState(false);
-  const [uid, setUid] = useState(null);     
+  const [uid, setUid] = useState(null);
 
-  
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setUid(user.uid);
-      } else {
+      if (user) setUid(user.uid);
+      else {
         setUid(null);
         setRecords([]);
       }
     });
-
     return unsubscribe;
   }, []);
 
-  
   useEffect(() => {
     if (!uid) return;
 
@@ -56,31 +95,29 @@ const BloodPressureScreen = () => {
     loadData();
   }, [uid]);
 
-  const saveData = async (data) => {
-    if (!uid) return;
-    try {
-      await AsyncStorage.setItem(
-        `bloodPressureRecords_${uid}`,
-        JSON.stringify(data)
-      );
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const saveData = useCallback(
+    async (data) => {
+      if (!uid) return;
+      try {
+        await AsyncStorage.setItem(
+          `bloodPressureRecords_${uid}`,
+          JSON.stringify(data)
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    [uid]
+  );
 
-  const handleAdd = async () => {
+  const handleAdd = useCallback(async () => {
     if (!uid) {
       Alert.alert("Not logged in", "Please log in to save your records.");
       return;
     }
 
     const today = new Date().toISOString().split("T")[0];
-    const newRecord = {
-      systolic,
-      diastolic,
-      pulse,
-      date: today,
-    };
+    const newRecord = { systolic, diastolic, pulse, date: today };
 
     let newStatus = "Normal";
     if (systolic > 130 || diastolic > 85) newStatus = "High";
@@ -92,11 +129,10 @@ const BloodPressureScreen = () => {
     await saveData(updatedRecords);
 
     checkDailyBadge(newStatus, today);
-  };
+  }, [systolic, diastolic, pulse, records, uid, saveData]);
 
-  const checkDailyBadge = async (status, today) => {
+  const checkDailyBadge = useCallback(async (status, today) => {
     if (!uid) return;
-
     try {
       const badges = JSON.parse(
         (await AsyncStorage.getItem(`badges_${uid}`)) || "{}"
@@ -115,13 +151,11 @@ const BloodPressureScreen = () => {
     } catch (e) {
       console.log("Error saving badges:", e);
     }
-  };
+  }, [uid]);
 
-  const handleResetData = () => {
-    setResetModalVisible(true);
-  };
+  const handleResetData = useCallback(() => setResetModalVisible(true), []);
 
-  const confirmReset = async () => {
+  const confirmReset = useCallback(async () => {
     if (!uid) {
       setResetModalVisible(false);
       return;
@@ -136,28 +170,21 @@ const BloodPressureScreen = () => {
       console.log(error);
       Alert.alert("Error", "Failed to reset data");
     }
-  };
+  }, [uid]);
 
-  const cancelReset = () => {
-    setResetModalVisible(false);
-  };
+  const cancelReset = useCallback(() => setResetModalVisible(false), []);
 
-  const chartData = {
+  // Memoization për chartData
+  const chartData = useMemo(() => ({
     labels: records.map((r) => r.date.slice(5)), // mm-dd
     datasets: [
-      {
-        data: records.map((r) => r.systolic),
-        color: () => "rgba(255, 99, 132, 1)",
-      },
-      {
-        data: records.map((r) => r.diastolic),
-        color: () => "rgba(54, 162, 235, 1)",
-      },
+      { data: records.map((r) => r.systolic), color: () => "rgba(255, 99, 132, 1)" },
+      { data: records.map((r) => r.diastolic), color: () => "rgba(54, 162, 235, 1)" },
     ],
-  };
+  }), [records]);
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <TouchableOpacity
         onPress={() => router.push("/(tabs)/home")}
         style={styles.backButton}
@@ -168,74 +195,31 @@ const BloodPressureScreen = () => {
       <Text style={styles.title}>Blood Pressure</Text>
 
       <View style={styles.inputsContainer}>
-        <View className="inputBox" style={styles.inputBox}>
-          <Text style={styles.label}>Systolic</Text>
-          <Text style={styles.value}>{systolic}</Text>
-          <View style={styles.selector}>
-            <TouchableOpacity onPress={() => setSystolic((p) => p - 1)}>
-              <Text style={styles.arrow}>-</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSystolic((p) => p + 1)}>
-              <Text style={styles.arrow}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputBox}>
-          <Text style={styles.label}>Diastolic</Text>
-          <Text style={styles.value}>{diastolic}</Text>
-          <View style={styles.selector}>
-            <TouchableOpacity onPress={() => setDiastolic((p) => p - 1)}>
-              <Text style={styles.arrow}>-</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setDiastolic((p) => p + 1)}>
-              <Text style={styles.arrow}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputBox}>
-          <Text style={styles.label}>Pulse</Text>
-          <Text style={styles.value}>{pulse}</Text>
-          <View style={styles.selector}>
-            <TouchableOpacity onPress={() => setPulse((p) => p - 1)}>
-              <Text style={styles.arrow}>-</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setPulse((p) => p + 1)}>
-              <Text style={styles.arrow}>+</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <InputBox
+          label="Systolic"
+          value={systolic}
+          onIncrement={() => setSystolic((p) => p + 1)}
+          onDecrement={() => setSystolic((p) => p - 1)}
+        />
+        <InputBox
+          label="Diastolic"
+          value={diastolic}
+          onIncrement={() => setDiastolic((p) => p + 1)}
+          onDecrement={() => setDiastolic((p) => p - 1)}
+        />
+        <InputBox
+          label="Pulse"
+          value={pulse}
+          onIncrement={() => setPulse((p) => p + 1)}
+          onDecrement={() => setPulse((p) => p - 1)}
+        />
       </View>
 
       <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
         <Text style={styles.buttonText}>Add</Text>
       </TouchableOpacity>
 
-      <View style={styles.resultCard}>
-        <Text style={styles.resultText}>
-          {systolic}/{diastolic} mmHg
-        </Text>
-        <Text
-          style={[
-            styles.status,
-            status === "Normal"
-              ? styles.normal
-              : status === "High"
-              ? styles.high
-              : styles.low,
-          ]}
-        >
-          {status}
-        </Text>
-        <Text style={styles.desc}>
-          {status === "Normal"
-            ? "Normal blood pressure. Manage stress and stay healthy."
-            : status === "High"
-            ? "High pressure. Reduce stress and monitor regularly."
-            : "Low pressure. Stay hydrated and rest properly."}
-        </Text>
-      </View>
+      <ResultCard systolic={systolic} diastolic={diastolic} status={status} />
 
       {records.length > 0 && (
         <>
@@ -253,6 +237,17 @@ const BloodPressureScreen = () => {
               labelColor: () => "#666",
             }}
             style={{ marginVertical: 8, borderRadius: 12 }}
+          />
+
+          <FlatList
+            data={records}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <Text style={{ textAlign: "center", marginVertical: 2 }}>
+                {item.date}: {item.systolic}/{item.diastolic} mmHg
+              </Text>
+            )}
+            style={{ marginBottom: 10 }}
           />
 
           <TouchableOpacity
@@ -294,7 +289,7 @@ const BloodPressureScreen = () => {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -332,7 +327,6 @@ const styles = StyleSheet.create({
   high: { color: "red" },
   low: { color: "blue" },
   desc: { marginTop: 8, textAlign: "center", color: "#555" },
-
   smallResetButton: {
     backgroundColor: "#ff4444",
     borderRadius: 8,
@@ -347,7 +341,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
   },
-
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -384,14 +377,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     alignItems: "center",
   },
-  cancelButton: {
-    backgroundColor: "#ccc",
-  },
-  confirmButton: {
-    backgroundColor: "#ff4444",
-  },
-  modalButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  cancelButton: { backgroundColor: "#ccc" },
+  confirmButton: { backgroundColor: "#ff4444" },
+  modalButtonText: { color: "#fff", fontWeight: "bold" },
 });

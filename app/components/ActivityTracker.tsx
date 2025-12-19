@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -8,16 +8,23 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  FlatList,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { auth } from "../../firebase"; 
+import { auth } from "../../firebase";
+
+/** =====================
+ * Types & Constants
+ * ===================== */
 
 type Badge = {
   id: string;
   label: string;
   threshold: number;
 };
+
+type HistoryItem = { dateKey: string; steps: number };
 
 const BADGES: Badge[] = [
   { id: "starter", label: "First 100!", threshold: 100 },
@@ -26,6 +33,9 @@ const BADGES: Badge[] = [
   { id: "champ", label: "10K Champ", threshold: 10000 },
 ];
 
+/** =====================
+ * Helpers
+ * ===================== */
 
 const checkStepBadge = async (uid: string, currentSteps: number) => {
   if (currentSteps >= 8000) {
@@ -45,35 +55,54 @@ const checkStepBadge = async (uid: string, currentSteps: number) => {
   }
 };
 
+/** =====================
+ * Memoized Child Components
+ * ===================== */
+
+const BadgeItem = React.memo(({ badge, unlocked }: { badge: Badge; unlocked: boolean }) => {
+  return (
+    <View
+      style={[styles.badge, unlocked ? styles.badgeOn : styles.badgeOff]}
+    >
+      <Text style={[styles.badgeIcon, { color: unlocked ? "#fff" : "#888" }]}>
+        {unlocked ? "🏅" : "🔘"}
+      </Text>
+      <Text style={styles.badgeText}>{badge.label}</Text>
+    </View>
+  );
+});
+
+const HistoryRow = React.memo(({ item, isToday }: { item: HistoryItem; isToday: boolean }) => {
+  const weekday = useMemo(() => {
+    const d = new Date(item.dateKey);
+    return d.toLocaleDateString(undefined, { weekday: "short" });
+  }, [item.dateKey]);
+
+  return (
+    <View style={[styles.historyItem, isToday && styles.historyToday]}>
+      <Text style={styles.historyDay}>{weekday}</Text>
+      <Text>{item.steps.toLocaleString()}</Text>
+    </View>
+  );
+});
+
+/** =====================
+ * Screen
+ * ===================== */
+
 export default function ActivityTrackerScreen() {
   const [steps, setSteps] = useState<number>(0);
   const [dailyGoal, setDailyGoal] = useState<number>(6000);
   const [level, setLevel] = useState<number>(1);
   const [lastTapTs, setLastTapTs] = useState<number>(0);
-  const [history, setHistory] = useState<Array<{ dateKey: string; steps: number }>>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [uid, setUid] = useState<string | null>(null);
-
- 
   const [challenge, setChallenge] = useState<string>("");
 
-  const fetchChallenge = async () => {
-    
-    const challenges = [
-      "Walk 5000 steps today!",
-      "Do a 10-minute stretch!",
-      "Reach 8000 steps today!",
-      "Double your steps from yesterday!",
-      "Take the stairs instead of the elevator!",
-      "Try a 5-minute meditation!",
-      "Go for a short run or jog today!",
-      "Do 20 push-ups!",
-      "Drink at least 2 liters of water today!"
-    ];
-    const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
-    setChallenge(`Today's Challenge: ${randomChallenge}`);
-  };
+  /** =====================
+   * Effects
+   * ===================== */
 
-  
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -88,7 +117,6 @@ export default function ActivityTrackerScreen() {
     return unsubscribe;
   }, []);
 
-
   useEffect(() => {
     if (!uid) return;
 
@@ -102,7 +130,7 @@ export default function ActivityTrackerScreen() {
         setHistory(JSON.parse(storedHistory));
       } else {
         const today = new Date();
-        const days: Array<{ dateKey: string; steps: number }> = [];
+        const days: HistoryItem[] = [];
         for (let i = 6; i >= 0; i--) {
           const d = new Date(today);
           d.setDate(today.getDate() - i);
@@ -118,58 +146,90 @@ export default function ActivityTrackerScreen() {
     loadData();
   }, [uid]);
 
-  const progressPct = Math.min(100, Math.round((steps / dailyGoal) * 100));
-  const weeklyTotal = history.reduce((sum, d) => sum + d.steps, 0);
+  /** =====================
+   * Memoized Values
+   * ===================== */
 
-  const handleAddSteps = (count: number) => {
-    if (!uid) {
-      Alert.alert("Not logged in", "Please log in to track your steps.");
-      return;
-    }
+  const progressPct = useMemo(
+    () => Math.min(100, Math.round((steps / dailyGoal) * 100)),
+    [steps, dailyGoal]
+  );
 
-    setSteps((prev) => {
-      const next = Math.max(0, prev + count);
-      AsyncStorage.setItem(`steps_${uid}`, next.toString());
+  const weeklyTotal = useMemo(
+    () => history.reduce((sum, d) => sum + d.steps, 0),
+    [history]
+  );
 
-     
-      checkStepBadge(uid, next);
+  /** =====================
+   * Callbacks
+   * ===================== */
 
-      if (next >= dailyGoal) {
-        setLevel((l) => l + 1);
-        setDailyGoal((g) => Math.round(g * 1.15));
+  const fetchChallenge = useCallback(() => {
+    const challenges = [
+      "Walk 5000 steps today!",
+      "Do a 10-minute stretch!",
+      "Reach 8000 steps today!",
+      "Double your steps from yesterday!",
+      "Take the stairs instead of the elevator!",
+      "Try a 5-minute meditation!",
+      "Go for a short run or jog today!",
+      "Do 20 push-ups!",
+      "Drink at least 2 liters of water today!",
+    ];
+    const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+    setChallenge(`Today's Challenge: ${randomChallenge}`);
+  }, []);
+
+  const handleAddSteps = useCallback(
+    (count: number) => {
+      if (!uid) {
+        Alert.alert("Not logged in", "Please log in to track your steps.");
+        return;
       }
-      return next;
-    });
 
-    setHistory((prevHistory) => {
-      if (prevHistory.length === 0) return prevHistory;
-      const todayKey = new Date().toISOString().slice(0, 10);
-      let nextHistory = prevHistory;
+      setSteps((prev) => {
+        const next = Math.max(0, prev + count);
+        AsyncStorage.setItem(`steps_${uid}`, next.toString());
+        checkStepBadge(uid, next);
 
-      if (prevHistory[prevHistory.length - 1]?.dateKey !== todayKey) {
-        const days: Array<{ dateKey: string; steps: number }> = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date();
-          d.setDate(d.getDate() - i);
-          const dateKey = d.toISOString().slice(0, 10);
-          const match = prevHistory.find((h) => h.dateKey === dateKey)?.steps ?? 0;
-          days.push({ dateKey, steps: match });
+        if (next >= dailyGoal) {
+          setLevel((l) => l + 1);
+          setDailyGoal((g) => Math.round(g * 1.15));
         }
-        nextHistory = days;
-      }
+        return next;
+      });
 
-      const updatedHistory = nextHistory.map((d, idx) =>
-        idx === nextHistory.length - 1
-          ? { ...d, steps: Math.max(0, d.steps + count) }
-          : d
-      );
+      setHistory((prevHistory) => {
+        if (prevHistory.length === 0) return prevHistory;
+        const todayKey = new Date().toISOString().slice(0, 10);
+        let nextHistory = prevHistory;
 
-      AsyncStorage.setItem(`history_${uid}`, JSON.stringify(updatedHistory));
-      return updatedHistory;
-    });
-  };
+        if (prevHistory[prevHistory.length - 1]?.dateKey !== todayKey) {
+          const days: HistoryItem[] = [];
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateKey = d.toISOString().slice(0, 10);
+            const match = prevHistory.find((h) => h.dateKey === dateKey)?.steps ?? 0;
+            days.push({ dateKey, steps: match });
+          }
+          nextHistory = days;
+        }
 
-  const handleTap = () => {
+        const updatedHistory = nextHistory.map((d, idx) =>
+          idx === nextHistory.length - 1
+            ? { ...d, steps: Math.max(0, d.steps + count) }
+            : d
+        );
+
+        AsyncStorage.setItem(`history_${uid}`, JSON.stringify(updatedHistory));
+        return updatedHistory;
+      });
+    },
+    [uid, dailyGoal]
+  );
+
+  const handleTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTapTs < 300) {
       handleAddSteps(100);
@@ -178,15 +238,19 @@ export default function ActivityTrackerScreen() {
       handleAddSteps(20);
       setLastTapTs(now);
     }
-  };
+  }, [handleAddSteps, lastTapTs]);
 
-  const handleResetAll = async () => {
+  const handleResetAll = useCallback(async () => {
     if (!uid) return;
     setSteps(0);
     setHistory([]);
     await AsyncStorage.setItem(`steps_${uid}`, "0");
     await AsyncStorage.removeItem(`history_${uid}`);
-  };
+  }, [uid]);
+
+  /** =====================
+   * Render
+   * ===================== */
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -261,36 +325,21 @@ export default function ActivityTrackerScreen() {
           <Text style={styles.levelText}>Lv. {level}</Text>
         </View>
         <Text style={{ marginTop: 4 }}>
-          Reach your goal to level up. Each level raises your daily goal slightly to keep it challenging.
+          Reach your goal to level up. Each level raises your daily goal slightly.
         </Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.subtitle}>Badges</Text>
-        <View style={styles.badgesRow}>
-          {BADGES.map((badge) => {
-            const unlocked = steps >= badge.threshold;
-            return (
-              <View
-                key={badge.id}
-                style={[
-                  styles.badge,
-                  unlocked ? styles.badgeOn : styles.badgeOff,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.badgeIcon,
-                    { color: unlocked ? "#fff" : "#888" },
-                  ]}
-                >
-                  {unlocked ? "🏅" : "🔘"}
-                </Text>
-                <Text style={styles.badgeText}>{badge.label}</Text>
-              </View>
-            );
-          })}
-        </View>
+        <FlatList
+          data={BADGES}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <BadgeItem badge={item} unlocked={steps >= item.threshold} />
+          )}
+        />
       </View>
 
       <View style={styles.card}>
@@ -298,41 +347,24 @@ export default function ActivityTrackerScreen() {
         <View style={styles.totalsRow}>
           <View style={styles.totalPill}>
             <Text style={styles.totalIcon}>📅</Text>
-            <Text style={styles.totalText}>
-              Today: {steps.toLocaleString()}
-            </Text>
+            <Text style={styles.totalText}>Today: {steps.toLocaleString()}</Text>
           </View>
           <View style={styles.totalPill}>
             <Text style={styles.totalIcon}>🗓️</Text>
-            <Text style={styles.totalText}>
-              Week: {weeklyTotal.toLocaleString()}
-            </Text>
+            <Text style={styles.totalText}>Week: {weeklyTotal.toLocaleString()}</Text>
           </View>
         </View>
-        <View style={styles.historyList}>
-          {history.map((h, idx) => {
-            const date = new Date(h.dateKey);
-            const weekday = date.toLocaleDateString(undefined, {
-              weekday: "short",
-            });
-            const isToday = idx === history.length - 1;
-            return (
-              <View
-                key={h.dateKey}
-                style={[
-                  styles.historyItem,
-                  isToday && styles.historyToday,
-                ]}
-              >
-                <Text style={styles.historyDay}>{weekday}</Text>
-                <Text>{h.steps.toLocaleString()}</Text>
-              </View>
-            );
-          })}
-        </View>
+
+        <FlatList
+          data={history}
+          keyExtractor={(item) => item.dateKey}
+          numColumns={3}
+          renderItem={({ item, index }) => (
+            <HistoryRow item={item} isToday={index === history.length - 1} />
+          )}
+        />
       </View>
 
-      {/* 🔹 Card për Fitness Challenge */}
       <View style={styles.card}>
         <Text style={styles.subtitle}>Fitness Challenge</Text>
         <Text>{challenge}</Text>
@@ -345,6 +377,10 @@ export default function ActivityTrackerScreen() {
     </ScrollView>
   );
 }
+
+/** =====================
+ * Styles
+ * ===================== */
 
 const styles = StyleSheet.create({
   container: { padding: 16 },
@@ -370,8 +406,7 @@ const styles = StyleSheet.create({
   levelRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
   levelIcon: { fontSize: 22, color: "#E6B800" },
   levelText: { marginLeft: 8, fontSize: 20, fontWeight: "700" },
-  badgesRow: { flexDirection: "row", flexWrap: "wrap" },
-  badge: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, marginRight: 8, marginBottom: 6 },
+  badge: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, marginRight: 8 },
   badgeOn: { backgroundColor: "#54C29A" },
   badgeOff: { backgroundColor: "rgba(0,0,0,0.06)" },
   badgeText: { color: "#4e4c4cff" },
@@ -380,8 +415,7 @@ const styles = StyleSheet.create({
   totalPill: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.06)", marginRight: 8, marginBottom: 8 },
   totalIcon: { fontSize: 16, marginRight: 4 },
   totalText: { fontWeight: "700" },
-  historyList: { flexDirection: "row", flexWrap: "wrap" },
-  historyItem: { width: "30%", padding: 8, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.04)", marginRight: 8, marginBottom: 8 },
+  historyItem: { flex: 1, margin: 4, padding: 8, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.04)" },
   historyToday: { borderWidth: 1, borderColor: "#54C29A" },
   historyDay: { fontWeight: "700", marginBottom: 2 },
   fab: { marginTop: 16, alignSelf: "center", flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 999, backgroundColor: "#54C29A" },

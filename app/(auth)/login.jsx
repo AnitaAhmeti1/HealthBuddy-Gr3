@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,29 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../../firebase"; 
+import { auth, googleProvider } from "../../firebase";
+
+// Komponent i memoizuar për butonin e Google
+const GoogleButton = React.memo(({ onPress, loading }) => (
+  <TouchableOpacity
+    style={[styles.googleButton, loading && { opacity: 0.7 }]}
+    onPress={onPress}
+    disabled={loading}
+  >
+    <View style={styles.googleContent}>
+      <Text style={styles.googleButtonText}>Continue with Google</Text>
+    </View>
+  </TouchableOpacity>
+));
+
+// Komponent i memoizuar për divider
+const Divider = React.memo(() => (
+  <View style={styles.dividerContainer}>
+    <View style={styles.divider} />
+    <Text style={styles.dividerText}>or</Text>
+    <View style={styles.divider} />
+  </View>
+));
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");       
@@ -20,7 +42,9 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const validate = () => {
+  const gradientColors = useMemo(() => ["#c2e9fb", "#a1c4fd"], []);
+
+  const validate = useCallback(() => {
     if (!email.trim() || !password.trim()) {
       setError("Both fields are required");
       return false;
@@ -32,9 +56,9 @@ export default function LoginScreen() {
     }
     setError("");
     return true;
-  };
+  }, [email, password]);
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     if (!validate()) return;
     try {
       setLoading(true);
@@ -51,15 +75,13 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, validate, router]);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     try {
       setError("");
       setLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      // këtu mundesh me ru user-in në firestore nëse të duhet
-      // const user = result.user;
+      await signInWithPopup(auth, googleProvider);
       router.replace("/home");
     } catch (e) {
       console.log("Google sign in error", e);
@@ -71,17 +93,16 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
-  const goToRegister = () => router.push("/register");
+  const goToRegister = useCallback(() => router.push("/register"), [router]);
 
   return (
-    <LinearGradient colors={["#c2e9fb", "#a1c4fd"]} style={styles.container}>
+    <LinearGradient colors={gradientColors} style={styles.container}>
       <View style={styles.card}>
-        <Image
-          source={require("../../assets/Logo.png")}
-          style={styles.logo}
-        />
+        {/* Logo normal */}
+        <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+
         <Text style={styles.title}>Welcome Back!</Text>
         <Text style={styles.subtitle}>Login to continue</Text>
 
@@ -119,25 +140,9 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
-        {/* divider OR */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.divider} />
-        </View>
+        <Divider />
 
-        {/* Google Sign-In button */}
-        <TouchableOpacity
-          style={[styles.googleButton, loading && { opacity: 0.7 }]}
-          onPress={handleGoogleSignIn}
-          disabled={loading}
-        >
-          <View style={styles.googleContent}>
-            {/* nëse ke një ikonë google, përdore këtu */}
-            {/* <Image source={require("../../assets/google.png")} style={styles.googleIcon} /> */}
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </View>
-        </TouchableOpacity>
+        <GoogleButton onPress={handleGoogleSignIn} loading={loading} />
 
         <View style={styles.registerContainer}>
           <Text style={styles.text}>Don't have an account? </Text>
@@ -219,11 +224,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  // googleIcon: {
-  //   width: 20,
-  //   height: 20,
-  //   marginRight: 8,
-  // },
   googleButtonText: {
     fontSize: 15,
     fontWeight: "500",

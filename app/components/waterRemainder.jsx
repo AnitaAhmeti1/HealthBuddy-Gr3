@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import { Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { BarChart } from "react-native-chart-kit";
 import * as Progress from 'react-native-progress';
 import { auth } from '../../firebase';
+
+// Lazy load BarChart
+const LazyBarChart = React.lazy(() => import("react-native-chart-kit").then(module => ({ default: module.BarChart })));
 
 export default function WaterTracker() {
   const router = useRouter(); 
@@ -16,28 +18,31 @@ export default function WaterTracker() {
   const [today, setToday] = useState(new Date().toISOString().split('T')[0]);
   const [quote, setQuote] = useState("");
 
-  const motivationalQuotes = [
+  const motivationalQuotes = useMemo(() => [
     "Stay hydrated, stay healthy! 💧",
     "Every sip counts! 🌊",
     "Keep it flowing! 💦",
     "Hydration = energy ⚡",
     "Water your body like a plant 🌱",
-  ];
-  const overhydrationQuotes = [
+  ], []);
+
+  const overhydrationQuotes = useMemo(() => [
     "Whoa! Take it easy, don't overdo it! ⚠️",
     "Hydration is good, but moderation is key 💧",
     "Slow down, your body needs balance 🧘‍♂️",
-  ];
+  ], []);
 
-  const getToday = () => new Date().toISOString().split('T')[0];
+  const getToday = useCallback(() => new Date().toISOString().split('T')[0], []);
 
-  const rawProgress = waterIntake / goal;
-  const progress = Math.min(rawProgress, 1);
-  let progressColor = '#00BFFF';
-  if (rawProgress > 1 && rawProgress <= 1.5) progressColor = '#32CD32';
-  else if (rawProgress > 1.5) progressColor = '#FF4500';
+  const rawProgress = useMemo(() => waterIntake / goal, [waterIntake, goal]);
+  const progress = useMemo(() => Math.min(rawProgress, 1), [rawProgress]);
+  const progressColor = useMemo(() => {
+    if (rawProgress > 1.5) return '#FF4500';
+    if (rawProgress > 1) return '#32CD32';
+    return '#00BFFF';
+  }, [rawProgress]);
 
-  
+  // Auth state
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) setUid(user.uid);
@@ -46,38 +51,33 @@ export default function WaterTracker() {
     return unsubscribe;
   }, []);
 
- 
-useEffect(() => {
-  const updateTip = async () => {
-    try {
-      const response = await fetch(
-          "https://api.quotable.io/random?tags=inspirational"
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch quote");
-
-      const data = await response.json();
-
-      setQuote(`${data.content} — ${data.author}`);
-    } catch (err) {
-      console.log("Error:", err);
-      setQuote("Stay healthy 💧");
-    }
-  };
-
-  updateTip();
-}, [waterIntake]);
-
-
-
- 
+  // Fetch motivational quote
   useEffect(() => {
+    const updateTip = async () => {
+      try {
+        const response = await fetch("https://api.quotable.io/random?tags=inspirational");
+        if (!response.ok) throw new Error("Failed to fetch quote");
+        const data = await response.json();
+        setQuote(`${data.content} — ${data.author}`);
+      } catch (err) {
+        console.log("Error:", err);
+        setQuote("Stay healthy 💧");
+      }
+    };
+    updateTip();
+  }, [waterIntake]);
+
+  // Load saved data
+  useEffect(() => {
+    if (!uid) return;
     const loadData = async () => {
       try {
-        const savedWater = await AsyncStorage.getItem(`waterIntake_${uid}`);
-        const savedLog = await AsyncStorage.getItem(`drinkingLog_${uid}`);
-        const savedHistory = await AsyncStorage.getItem(`dailyHistory_${uid}`);
-        const savedDate = await AsyncStorage.getItem(`lastSavedDate_${uid}`);
+        const [savedWater, savedLog, savedHistory, savedDate] = await Promise.all([
+          AsyncStorage.getItem(`waterIntake_${uid}`),
+          AsyncStorage.getItem(`drinkingLog_${uid}`),
+          AsyncStorage.getItem(`dailyHistory_${uid}`),
+          AsyncStorage.getItem(`lastSavedDate_${uid}`),
+        ]);
 
         if (savedWater !== null) setWaterIntake(JSON.parse(savedWater));
         if (savedLog !== null) setDrinkingLog(JSON.parse(savedLog));
@@ -92,9 +92,9 @@ useEffect(() => {
       }
     };
     loadData();
-  }, [uid]);
+  }, [uid, getToday]);
 
-  
+  // Schedule daily reset at midnight
   useEffect(() => {
     const scheduleReset = () => {
       const now = new Date();
@@ -109,10 +109,11 @@ useEffect(() => {
       }, nextReset.getTime() - now.getTime());
     };
     scheduleReset();
-  }, []);
+  }, [getToday]);
 
- 
+  // Save data when intake/log/history changes
   useEffect(() => {
+    if (!uid) return;
     const saveData = async () => {
       try {
         await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(waterIntake));
@@ -124,37 +125,33 @@ useEffect(() => {
       }
     };
     saveData();
-  }, [waterIntake, drinkingLog, dailyHistory]);
+  }, [waterIntake, drinkingLog, dailyHistory, uid, getToday]);
 
-  const addWater = async (amount) => {
+  const addWater = useCallback(async (amount) => {
     if (!uid) return;
     const currentTime = new Date().toLocaleTimeString();
     const newIntake = waterIntake + amount;
     const newLog = [...drinkingLog, { time: currentTime, amount, id: Date.now().toString() }];
-
     setWaterIntake(newIntake);
     setDrinkingLog(newLog);
-
     await AsyncStorage.setItem(`waterIntake_${uid}`, JSON.stringify(newIntake));
     await AsyncStorage.setItem(`drinkingLog_${uid}`, JSON.stringify(newLog));
-
     checkHydrationBadge(newIntake);
-  };
+  }, [waterIntake, drinkingLog, uid]);
 
-  const deleteWaterLog = (id, amount) => {
+  const deleteWaterLog = useCallback((id, amount) => {
     const updatedLog = drinkingLog.filter(item => item.id !== id);
     setDrinkingLog(updatedLog);
     setWaterIntake(waterIntake - amount);
-  };
+  }, [drinkingLog, waterIntake]);
 
-  const checkHydrationBadge = async (currentIntake) => {
+  const checkHydrationBadge = useCallback(async (currentIntake) => {
     if (!uid) return;
     if (currentIntake >= goal) {
       try {
         const badgesData = await AsyncStorage.getItem(`badges_${uid}`);
         const badges = badgesData ? JSON.parse(badgesData) : {};
         const todayDate = getToday();
-
         if (badges.hydrationHeroDate !== todayDate) {
           badges.hydrationHeroDate = todayDate;
           await AsyncStorage.setItem(`badges_${uid}`, JSON.stringify(badges));
@@ -164,9 +161,9 @@ useEffect(() => {
         console.log("Error updating badges", e);
       }
     }
-  };
+  }, [goal, uid, getToday]);
 
-  const resetDailyIntake = async (previousDate) => {
+  const resetDailyIntake = useCallback(async (previousDate) => {
     if (!uid) return;
     try {
       if (previousDate) {
@@ -185,12 +182,12 @@ useEffect(() => {
     } catch (error) {
       console.log('Error resetting daily intake', error);
     }
-  };
+  }, [uid, waterIntake, dailyHistory, goal, getToday]);
 
-  const recentDays = dailyHistory.slice(-7);
-  const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const recentDays = useMemo(() => dailyHistory.slice(-7), [dailyHistory]);
+  const currentDate = useMemo(() => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }), []);
 
-  const chartData = {
+  const chartData = useMemo(() => ({
     labels: recentDays.map((item) => {
       const dateObj = new Date(item.date);
       const day = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
@@ -200,9 +197,9 @@ useEffect(() => {
     datasets: [
       { data: recentDays.map(item => item.percent) }
     ],
-  };
+  }), [recentDays]);
 
-  const renderHeader = () => (
+  const renderHeader = useCallback(() => (
     <View>
       <TouchableOpacity
         onPress={() => router.push("/(tabs)/home")}
@@ -233,22 +230,24 @@ useEffect(() => {
       {recentDays.length > 0 && (
         <View style={styles.chartContainer}>
           <Text style={styles.weekTitle}>Weekly Hydration Progress</Text>
-          <BarChart
-            data={chartData}
-            width={Dimensions.get("window").width - 40}
-            height={200}
-            yAxisSuffix="%"
-            chartConfig={{
-              backgroundColor: "#E3F2FD",
-              backgroundGradientFrom: "#E3F2FD",
-              backgroundGradientTo: "#BBDEFB",
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
-              labelColor: () => "#007ACC",
-              propsForLabels: { fontSize: 8, textAlign: 'center', numberOfLines: 2, lineHeight: 10 },
-            }}
-            style={styles.chart}
-          />
+          <Suspense fallback={<Text>Loading chart...</Text>}>
+            <LazyBarChart
+              data={chartData}
+              width={Dimensions.get("window").width - 40}
+              height={200}
+              yAxisSuffix="%"
+              chartConfig={{
+                backgroundColor: "#E3F2FD",
+                backgroundGradientFrom: "#E3F2FD",
+                backgroundGradientTo: "#BBDEFB",
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(0, 122, 204, ${opacity})`,
+                labelColor: () => "#007ACC",
+                propsForLabels: { fontSize: 8, textAlign: 'center', numberOfLines: 2, lineHeight: 10 },
+              }}
+              style={styles.chart}
+            />
+          </Suspense>
         </View>
       )}
 
@@ -262,25 +261,28 @@ useEffect(() => {
         </View>
       </View>
     </View>
-  );
+  ), [router, currentDate, quote, progress, progressColor, rawProgress, waterIntake, goal, recentDays, chartData, addWater]);
 
-  const renderLogItem = ({ item }) => (
+  const renderLogItemMemo = useCallback(({ item }) => (
     <View style={styles.logItem}>
       <Text style={styles.logText}>Drank {item.amount} ml at {item.time}</Text>
       <TouchableOpacity onPress={() => deleteWaterLog(item.id, item.amount)} style={styles.deleteButton}>
         <Text style={styles.deleteButtonText}>Delete</Text>
       </TouchableOpacity>
     </View>
-  );
+  ), [deleteWaterLog]);
 
   return (
     <FlatList
       data={drinkingLog}
-      renderItem={renderLogItem}
+      renderItem={renderLogItemMemo}
       keyExtractor={item => item.id}
       ListHeaderComponent={renderHeader}
       contentContainerStyle={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
+      initialNumToRender={5}
+      windowSize={10}
+      removeClippedSubviews={true}
     />
   );
 }

@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
+
 import {
   View,
   Text,
@@ -14,6 +15,12 @@ import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../../firebase";
 
+// Komponent statik për Logo (memoized për performance)
+const Logo = () => (
+  <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+);
+const MemoizedLogo = React.memo(Logo);
+
 export default function RegisterScreen() {
   const [name, setName] = useState("");              
   const [email, setEmail] = useState("");
@@ -27,8 +34,8 @@ export default function RegisterScreen() {
   const passwordRef = useRef(null);
   const confirmRef = useRef(null);
 
-
-  const validate = () => {
+  // Memoized validation function
+  const validate = useCallback(() => {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setError("All fields are required");
       return false;
@@ -48,17 +55,15 @@ export default function RegisterScreen() {
     }
     setError("");
     return true;
-  };
+  }, [name, email, password, confirmPassword]);
 
-  const handleRegister = async () => {
+  // Memoized registration handler
+  const handleRegister = useCallback(async () => {
     if (!validate()) return;
     try {
       setLoading(true);
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-
-      
       await updateProfile(cred.user, { displayName: name });
-
       setModalVisible(true);
     } catch (e) {
       if (e.code === "auth/email-already-in-use") {
@@ -69,62 +74,65 @@ export default function RegisterScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, name, validate]);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalVisible(false);
     router.push("/login");
-  };
+  }, [router]);
+
+  // Memoized input fields for better rendering performance
+  const InputField = useCallback(({ placeholder, value, onChangeText, secureTextEntry, returnKeyType, onSubmitEditing, refProp }) => (
+    <TextInput
+      style={styles.input}
+      placeholder={placeholder}
+      placeholderTextColor="#666"
+      value={value}
+      onChangeText={onChangeText}
+      secureTextEntry={secureTextEntry}
+      returnKeyType={returnKeyType}
+      onSubmitEditing={onSubmitEditing}
+      ref={refProp}
+    />
+  ), []);
 
   return (
     <LinearGradient colors={["#a1c4fd", "#c2e9fb"]} style={styles.container}>
       <View style={styles.card}>
-        <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+        <MemoizedLogo />
         <Text style={styles.title}>Create new account</Text>
         <Text style={styles.subtitle}>Join HealthBuddy and start tracking your health</Text>
 
-       
-        <TextInput
-          style={styles.input}
+        <InputField
           placeholder="Name"
-          placeholderTextColor="#666"
           value={name}
           onChangeText={setName}
           returnKeyType="next"
           onSubmitEditing={() => emailRef.current?.focus()}
         />
-
-        <TextInput
-          style={styles.input}
+        <InputField
           placeholder="Email"
-          placeholderTextColor="#666"
           value={email}
           onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
           returnKeyType="next"
-          ref={emailRef}
+          refProp={emailRef}
         />
-        <TextInput
-          style={styles.input}
+        <InputField
           placeholder="Password"
-          placeholderTextColor="#666"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           returnKeyType="next"
-          ref={passwordRef}
-
+          refProp={passwordRef}
         />
-        <TextInput
-          style={styles.input}
+        <InputField
           placeholder="Confirm Password"
-          placeholderTextColor="#666"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
           returnKeyType="done"
           onSubmitEditing={handleRegister}
+          refProp={confirmRef}
         />
 
         {!!error && <Text style={styles.error}>{error}</Text>}
