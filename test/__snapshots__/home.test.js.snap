@@ -1,0 +1,907 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Home Screen renders Home screen correctly (snapshot) 1`] = `
+<RCTScrollView
+  style={
+    {
+      "backgroundColor": "#E3F2FD",
+      "flex": 1,
+      "paddingTop": 60,
+    }
+  }
+>
+  <View>
+    <Text
+      style={
+        {
+          "color": "#007ACC",
+          "fontSize": 28,
+          "fontWeight": "bold",
+          "marginBottom": 5,
+          "textAlign": "center",
+        }
+      }
+    >
+      HealthBuddy
+    </Text>
+    <Text
+      style={
+        {
+          "color": "#555",
+          "fontSize": 16,
+          "marginBottom": 25,
+          "textAlign": "center",
+        }
+      }
+    >
+      Welcome back! Choose a section below.
+    </Text>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "flexWrap": "wrap",
+          "justifyContent": "center",
+        }
+      }
+    >
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#fff",
+            "borderRadius": 15,
+            "elevation": 3,
+            "margin": 10,
+            "opacity": 1,
+            "padding": 20,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 4,
+            "width": "40%",
+          }
+        }
+      >
+        <Ionicons
+          color="#00BFFF"
+          name="water-outline"
+          size={40}
+        />
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "marginTop": 10,
+              "textAlign": "center",
+            }
+          }
+        >
+          Water Tracker
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#666",
+              "fontSize": 12,
+              "marginTop": 4,
+              "textAlign": "center",
+            }
+          }
+        >
+          Track your daily hydration 💧
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#fff",
+            "borderRadius": 15,
+            "elevation": 3,
+            "margin": 10,
+            "opacity": 1,
+            "padding": 20,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 4,
+            "width": "40%",
+          }
+        }
+      >
+        <Ionicons
+          color="#FF6347"
+          name="heart-outline"
+          size={40}
+        />
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "marginTop": 10,
+              "textAlign": "center",
+            }
+          }
+        >
+          Blood Pressure
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#666",
+              "fontSize": 12,
+              "marginTop": 4,
+              "textAlign": "center",
+            }
+          }
+        >
+          Monitor your BP and pulse
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#fff",
+            "borderRadius": 15,
+            "elevation": 3,
+            "margin": 10,
+            "opacity": 1,
+            "padding": 20,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 4,
+            "width": "40%",
+          }
+        }
+      >
+        <Ionicons
+          color="#6A5ACD"
+          name="bed-outline"
+          size={40}
+        />
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "marginTop": 10,
+              "textAlign": "center",
+            }
+          }
+        >
+          Sleep Tracker
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#666",
+              "fontSize": 12,
+              "marginTop": 4,
+              "textAlign": "center",
+            }
+          }
+        >
+          Track your sleep hours 🛌
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#fff",
+            "borderRadius": 15,
+            "elevation": 3,
+            "margin": 10,
+            "opacity": 1,
+            "padding": 20,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 4,
+            "width": "40%",
+          }
+        }
+      >
+        <Ionicons
+          color="#32CD32"
+          name="walk-outline"
+          size={40}
+        />
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 18,
+              "fontWeight": "bold",
+              "marginTop": 10,
+              "textAlign": "center",
+            }
+          }
+        >
+          Steps Tracker
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#666",
+              "fontSize": 12,
+              "marginTop": 4,
+              "textAlign": "center",
+            }
+          }
+        >
+          Count your daily steps 👣
+        </Text>
+      </View>
+    </View>
+    <Text
+      style={
+        {
+          "color": "#007ACC",
+          "fontSize": 20,
+          "fontWeight": "bold",
+          "marginBottom": 10,
+          "marginLeft": 15,
+          "marginTop": 30,
+        }
+      }
+    >
+      Health Articles
+    </Text>
+    <View
+      style={
+        {
+          "paddingHorizontal": 15,
+        }
+      }
+    >
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "backgroundColor": "#fff",
+            "borderRadius": 12,
+            "elevation": 2,
+            "marginBottom": 12,
+            "opacity": 1,
+            "padding": 15,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 3,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 16,
+              "fontWeight": "bold",
+            }
+          }
+        >
+          Healthy Eating
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#555",
+              "fontSize": 13,
+              "marginTop": 4,
+            }
+          }
+        >
+          Tips for balanced nutrition.
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "backgroundColor": "#fff",
+            "borderRadius": 12,
+            "elevation": 2,
+            "marginBottom": 12,
+            "opacity": 1,
+            "padding": 15,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 3,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 16,
+              "fontWeight": "bold",
+            }
+          }
+        >
+          Exercise Daily
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#555",
+              "fontSize": 13,
+              "marginTop": 4,
+            }
+          }
+        >
+          Stay active to boost your health.
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "backgroundColor": "#fff",
+            "borderRadius": 12,
+            "elevation": 2,
+            "marginBottom": 12,
+            "opacity": 1,
+            "padding": 15,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 3,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 16,
+              "fontWeight": "bold",
+            }
+          }
+        >
+          Mental Wellness
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#555",
+              "fontSize": 13,
+              "marginTop": 4,
+            }
+          }
+        >
+          Meditation and stress relief tips.
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "backgroundColor": "#fff",
+            "borderRadius": 12,
+            "elevation": 2,
+            "marginBottom": 12,
+            "opacity": 1,
+            "padding": 15,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 3,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 16,
+              "fontWeight": "bold",
+            }
+          }
+        >
+          Heart Care
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#555",
+              "fontSize": 13,
+              "marginTop": 4,
+            }
+          }
+        >
+          Monitor and maintain heart health.
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "backgroundColor": "#fff",
+            "borderRadius": 12,
+            "elevation": 2,
+            "marginBottom": 12,
+            "opacity": 1,
+            "padding": 15,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 3,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 16,
+              "fontWeight": "bold",
+            }
+          }
+        >
+          Sleep Tips
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#555",
+              "fontSize": 13,
+              "marginTop": 4,
+            }
+          }
+        >
+          Improve your sleep quality.
+        </Text>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "backgroundColor": "#fff",
+            "borderRadius": 12,
+            "elevation": 2,
+            "marginBottom": 12,
+            "opacity": 1,
+            "padding": 15,
+            "shadowColor": "#000",
+            "shadowOffset": {
+              "height": 2,
+              "width": 0,
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 3,
+          }
+        }
+      >
+        <Text
+          style={
+            {
+              "color": "#333",
+              "fontSize": 16,
+              "fontWeight": "bold",
+            }
+          }
+        >
+          Hydration
+        </Text>
+        <Text
+          style={
+            {
+              "color": "#555",
+              "fontSize": 13,
+              "marginTop": 4,
+            }
+          }
+        >
+          Importance of drinking enough water.
+        </Text>
+      </View>
+    </View>
+    <Text
+      style={
+        {
+          "color": "#007ACC",
+          "fontSize": 20,
+          "fontWeight": "bold",
+          "marginBottom": 10,
+          "marginLeft": 15,
+          "marginTop": 30,
+        }
+      }
+    >
+      Health Goals
+    </Text>
+    <View
+      style={
+        {
+          "backgroundColor": "#fff",
+          "borderRadius": 15,
+          "elevation": 2,
+          "marginBottom": 30,
+          "marginHorizontal": 15,
+          "marginTop": 5,
+          "padding": 16,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 1,
+            "width": 0,
+          },
+          "shadowOpacity": 0.1,
+          "shadowRadius": 3,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#555",
+            "fontSize": 14,
+            "marginBottom": 12,
+          }
+        }
+      >
+        Create and manage your health goals (water, steps, sleep, blood pressure).
+      </Text>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onClick={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "#007ACC",
+            "borderRadius": 10,
+            "flexDirection": "row",
+            "justifyContent": "center",
+            "opacity": 1,
+            "paddingVertical": 10,
+          }
+        }
+      >
+        <Ionicons
+          color="#fff"
+          name="checkmark-done-outline"
+          size={20}
+        />
+        <Text
+          style={
+            {
+              "color": "#fff",
+              "fontSize": 15,
+              "fontWeight": "600",
+              "marginLeft": 8,
+            }
+          }
+        >
+          Open Health Goals
+        </Text>
+      </View>
+    </View>
+  </View>
+</RCTScrollView>
+`;
