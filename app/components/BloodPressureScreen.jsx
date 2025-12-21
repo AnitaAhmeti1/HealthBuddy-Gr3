@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import { auth } from "../../firebase";
 
 const screenWidth = Dimensions.get("window").width;
 
-// Komponentë statikë të memoizuar
 const InputBox = React.memo(({ label, value, onIncrement, onDecrement }) => (
   <View style={styles.inputBox}>
     <Text style={styles.label}>{label}</Text>
@@ -82,7 +81,6 @@ const BloodPressureScreen = () => {
 
   useEffect(() => {
     if (!uid) return;
-
     const loadData = async () => {
       try {
         const json = await AsyncStorage.getItem(`bloodPressureRecords_${uid}`);
@@ -91,7 +89,6 @@ const BloodPressureScreen = () => {
         console.log(error);
       }
     };
-
     loadData();
   }, [uid]);
 
@@ -154,6 +151,7 @@ const BloodPressureScreen = () => {
   }, [uid]);
 
   const handleResetData = useCallback(() => setResetModalVisible(true), []);
+  const cancelReset = useCallback(() => setResetModalVisible(false), []);
 
   const confirmReset = useCallback(async () => {
     if (!uid) {
@@ -172,16 +170,13 @@ const BloodPressureScreen = () => {
     }
   }, [uid]);
 
-  const cancelReset = useCallback(() => setResetModalVisible(false), []);
-
-  // Memoization për chartData
-  const chartData = useMemo(() => ({
+ const chartData = useMemo(() => {
+  return {
     labels: records.map((r) => r.date.slice(5)), // mm-dd
-    datasets: [
-      { data: records.map((r) => r.systolic), color: () => "rgba(255, 99, 132, 1)" },
-      { data: records.map((r) => r.diastolic), color: () => "rgba(54, 162, 235, 1)" },
-    ],
-  }), [records]);
+    datasets: [{ data: records.map((r) => r.systolic) }],
+  };
+}, [records]);
+
 
   return (
     <View style={styles.container}>
@@ -267,7 +262,7 @@ const BloodPressureScreen = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Reset Data</Text>
+                      <Text style={styles.modalTitle}>Reset Data</Text>
             <Text style={styles.modalText}>
               Are you sure you want to delete all blood pressure records? This
               action cannot be undone.
@@ -297,15 +292,28 @@ export default BloodPressureScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#e984413f", padding: 16 },
+
   backButton: { marginBottom: 12, padding: 10, alignSelf: "flex-start" },
   backText: { fontSize: 24, color: "#ff7f00", fontWeight: "bold" },
-  title: { fontSize: 22, fontWeight: "600", textAlign: "center", marginVertical: 12 },
-  inputsContainer: { flexDirection: "row", justifyContent: "space-between", marginVertical: 16 },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "600",
+    textAlign: "center",
+    marginVertical: 12,
+  },
+
+  inputsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 16,
+  },
   inputBox: { alignItems: "center", flex: 1 },
   label: { fontSize: 14, color: "#777" },
   value: { fontSize: 22, fontWeight: "bold", marginVertical: 4 },
   selector: { flexDirection: "row", gap: 10 },
   arrow: { fontSize: 22, paddingHorizontal: 10, color: "#ff7f00" },
+
   addButton: {
     backgroundColor: "#ff7f00",
     borderRadius: 10,
@@ -314,6 +322,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   buttonText: { color: "#fff", fontWeight: "bold" },
+
   resultCard: {
     backgroundColor: "#f9f9f9",
     borderRadius: 12,
@@ -327,6 +336,7 @@ const styles = StyleSheet.create({
   high: { color: "red" },
   low: { color: "blue" },
   desc: { marginTop: 8, textAlign: "center", color: "#555" },
+
   smallResetButton: {
     backgroundColor: "#ff4444",
     borderRadius: 8,
@@ -341,6 +351,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
   },
+
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -381,3 +392,4 @@ const styles = StyleSheet.create({
   confirmButton: { backgroundColor: "#ff4444" },
   modalButtonText: { color: "#fff", fontWeight: "bold" },
 });
+
