@@ -1,9 +1,4 @@
 // app/profile.jsx
-// FIXED: Image picker now works on both mobile and web
-// - Handles blob URIs on web by converting to base64
-// - Handles file URIs on mobile properly
-// - Added proper error handling for all platforms
-// - Permission handling for camera and gallery
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -19,6 +14,7 @@ import {
   ActivityIndicator,
   Platform,
   Linking,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -517,7 +513,7 @@ export default function ProfileScreen() {
         onRequestClose={() => setAvatarModalVisible(false)}
       >
         <TouchableOpacity 
-          style={modalStyles.overlay}
+          style={modalStyles.avatarOverlay}
           activeOpacity={1}
           onPress={() => setAvatarModalVisible(false)}
         >
@@ -566,32 +562,48 @@ export default function ProfileScreen() {
 
       {/* EDIT NAME MODAL */}
       <Modal visible={editModalVisible} transparent animationType="fade">
-        <View style={modalStyles.overlay}>
-          <View style={modalStyles.box}>
-            <Text style={modalStyles.modalTitle}>Edit Name</Text>
-            <TextInput
-              style={modalStyles.input}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Enter your name"
-              autoFocus
-            />
-            <View style={modalStyles.modalButtons}>
-              <TouchableOpacity 
-                style={modalStyles.cancelButton}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={modalStyles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={modalStyles.saveButton}
-                onPress={saveProfile}
-              >
-                <Text style={modalStyles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={modalStyles.overlay}
+        >
+          <TouchableOpacity 
+            style={{ flex: 1, justifyContent: 'center' }}
+            activeOpacity={1}
+            onPress={() => setEditModalVisible(false)}
+          >
+            <TouchableOpacity 
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={modalStyles.box}>
+                <Text style={modalStyles.modalTitle}>Edit Name</Text>
+                <TextInput
+                  style={modalStyles.input}
+                  value={newName}
+                  onChangeText={setNewName}
+                  placeholder="Enter your name"
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={saveProfile}
+                />
+                <View style={modalStyles.modalButtons}>
+                  <TouchableOpacity 
+                    style={modalStyles.cancelButton}
+                    onPress={() => setEditModalVisible(false)}
+                  >
+                    <Text style={modalStyles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={modalStyles.saveButton}
+                    onPress={saveProfile}
+                  >
+                    <Text style={modalStyles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Quick Stats */}
@@ -649,9 +661,14 @@ export default function ProfileScreen() {
 }
 
 const modalStyles = StyleSheet.create({
-  overlay: { 
+  avatarOverlay: { 
     flex: 1, 
     justifyContent: 'flex-end', 
+    backgroundColor: 'rgba(0,0,0,0.5)' 
+  },
+  overlay: { 
+    flex: 1, 
+    justifyContent: 'center', 
     backgroundColor: 'rgba(0,0,0,0.5)' 
   },
   avatarOptionsContainer: {
