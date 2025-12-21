@@ -9,4 +9,8 @@ describe('Home Screen', () => {
     expect(toJSON()).toMatchSnapshot();
   });
 
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> d557b194a21811822a9496daca095dcf7ca0585d
